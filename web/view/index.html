@@ -1,0 +1,55 @@
+{{template "header.html" .}}
+
+<section id="content">
+    <div class="body_container">
+        <div class="layout">
+
+            {{ range .Posts }}
+
+            <article class="post">
+                <div class="pure-g">
+                    <div class="pure-u-1 pure-u-md-3-4">
+                        <h2 class="post-title"><a href="http://localhost:8080/post/{{ .ID }}">{{ .Title }}</a> </h2>
+                        <div class="post-content">{{ .GetAbstract }}
+                            <p class="more"><a href="http://localhost:8080/post/{{ .ID }}" title="{{ .Title }}">- 阅读剩余部分 -</a> </p>
+                        </div>
+                    </div>
+
+                    <div class="pure-u-1 pure-u-md-1-4">
+                        <div class="post-meta">
+                            <ul>
+                                <li><time datetime="{{ .GetDate }}" itemprop="datePublished">{{ .GetDate }}</time></li>
+                                <li><span>
+                                    {{ if eq .CommentsNum 0 }}
+                                        暂无评论
+                                    {{ else if eq .CommentsNum 1 }}
+                                        仅有一条评论
+                                    {{ else }}
+                                        已有{{ .CommentsNum }}条评论
+                                    {{ end }}
+                                </span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            {{ end }}
+
+        </div>
+    </div>
+</section>
+
+
+
+<div class="pure-u-1-1">
+    <div class="paginator pager pagination">
+        <div class="paginator_container pagination_container">
+            <?php $this->pageLink('<x aria-label="Previous" class="newer-posts">上一页</x>'); ?> <?php $this->pageLink('<x aria-label="Next" class="older-posts">下一页</x>','next'); ?>
+            <div style="clear:both;height:0;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{{template "footer.html"}}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh" class="no-js">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>
+  <meta content="yes" name="apple-mobile-web-app-capable"/>
+  <meta content="black" name="apple-mobile-web-app-status-bar-style"/>
+  <meta content="telephone=no" name="format-detection"/>
+  <meta name="renderer" content="webkit">
+
+  <title>{{ .Title }}</title>
+
+  <script type="text/javascript" src="/web/public/script.js"></script>
+  <script type="text/javascript" src="/web/public/jquery.min.js"></script>
+  <script type="text/javascript" src="/web/public/baguetteBox.js"></script>
+
+  <link rel="stylesheet" href="/public/style.css">
+  <link rel="stylesheet" href="/public/custom.css">
+
+</head>
+<body>
+<div class="dark"></div>
+<script type="text/javascript"> var model = localStorage.getItem("yone_color_style"); if (model == "dark") { document.querySelector("body").setAttribute("theme","dark"); document.querySelector("body").querySelector(".dark").style.display = "block"; } </script>
+
+<div class="container">
+  <section id="header">
+    <div class="body_container">
+      <div class="head">
+        <div class="header-title">
+          <h1><a id="logo" href="http://localhost:8080">大标题</a> </h1>
+          <nav class="nav-menu">
+            <ul class="site_nav">
+              <li><a {{ if .isIndex }} class="current"{{ end }} href="http://localhost:8080">首页</a></li>
+<!--              <?php $this->widget('Widget_Contents_Page_List')->to($pages); ?>-->
+<!--              <?php while($pages->next()): ?>-->
+
+<!--              <li><a<?php if($this->is('page', $pages->slug)): ?> class="current"<?php endif; ?> href="<?php $pages->permalink(); ?>" title="<?php $pages->title(); ?>"><?php $pages->title(); ?></a></li>-->
+
+<!--              <?php endwhile; ?>-->
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="header-fix">
+    <div class="body_container">
+      <div class="head">
+        <div class="header-title">
+
+          <!-- 如果是文章页面 -->
+          {{ if .isPost }}
+          <?php if ($this->is('post')): ?>
+          <h1 class="post-fix-left-logo"> <a id="logo" href="<?php $this->options->siteUrl() ?>"><?php $this->options->title() ?></a> </h1>
+          <h3 class="hidden-if-lg"><?php $this->title() ?></h3>
+          <div class="post-fix-value hidden-if-md">
+            <!-- TODO: 可以直接获取文章的评论链接么？ -->
+            <span class="post-commentnums"><a href="<?php $this->permalink() ?>#comments"><?php $this->commentsNum('%d 条评论'); ?></a></span>
+            <span class="post-tags"><?php $this->tags(',', true, 'none'); ?></span>
+          </div>
+          {{ end }}
+
+          <!-- 如果是独立页面 -->
+          {{ if .isPage }}
+          <h1><a id="logo" href="http://localhost:8080">网站名</a> </h1>
+          <div class="fix-value hidden-if-md">
+            <span><em id="hitokoto">:D 获取中...</em></span>
+          </div>
+          <script src="https://v1.hitokoto.cn/?encode=js&amp;select=%23hitokoto" defer=""></script>
+          {{ end }}
+
+          <nav class="nav-menu">
+            <ul class="site_nav">
+              <li><a {{ if or .isIndex .isPost }} class="current" {{ end }} href="http://localhost:8080">首页</a></li>
+<!--              <?php while($pages->next()): ?>-->
+
+<!--              <li><a<?php if($this->is('page', $pages->slug)): ?> class="current"<?php endif; ?> href="<?php $pages->permalink(); ?>" title="<?php $pages->title(); ?>"><?php $pages->title(); ?></a></li>-->
+
+<!--              <?php endwhile; ?>-->
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </section>

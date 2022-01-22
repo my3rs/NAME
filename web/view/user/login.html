@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A layout example that shows off a blog page with a list of posts.">
+    <title>Pure Admin Panel</title>
+
+    <link rel="stylesheet" href="/public/pure-min.css">
+    <link rel="stylesheet" href="/public/pure-responsive-min.css">
+    <link rel="stylesheet" href="/public/style.css">
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="main" class="pure-g">
+        <div class="sidebar pure-u-1 pure-u-md-1-2">
+            <div class="header-large">
+                <h1>Pure Admin</h1>
+                <h2>Simple Admin Panel For Everyone</h2>
+
+                <nav class="nav">
+                    <ul>
+                        <li>
+                            <a class="pure-button active" href="login.html">Login</a>
+                            <a class="pure-button" href="register.html">Register</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <div class="content pure-u-1 pure-u-md-1-2">
+            <div class="header-medium">
+
+                <div class="items">
+                    <h1 class="subhead">Login</h1>
+
+<!--                    <aside class="pure-message message-success">-->
+<!--                        <p><strong>SUCCESS</strong>: Success message.</p>-->
+<!--                    </aside>-->
+                    <aside class="pure-message message-error" id="message-error" style="display: none">
+                        <p><strong>ERROR</strong>: Error message.</p>
+                    </aside>
+<!--                    <aside class="pure-message message-warning">-->
+<!--                        <p><strong>WARNING</strong>: Warning message.</p>-->
+<!--                    </aside>-->
+                    <form class="pure-form pure-form-stacked">
+                        <fieldset>
+
+                            <label for="username">Email</label>
+                            <input id="username" type="text" placeholder="Username" class="pure-input-1" value="">
+
+                            <label for="password">Password</label>
+                            <input id="password" type="password" placeholder="Password" class="pure-input-1" value="">
+
+                            <label for="remember" class="pure-checkbox">
+                                <input id="remember" type="checkbox" value="1"> Remember me
+                            </label>
+
+                            <button type="button" class="pure-button button-success" id="login-btn">Sign in</button>
+
+                        </fieldset>
+
+                    </form>
+                </div>
+
+                <div class="footer">
+                    <div class="pure-menu pure-menu-horizontal">
+                        <ul>
+                            <li class="pure-menu-item"><a href="http://purecss.io/" class="pure-menu-link">PURE CSS</a></li>
+                            <li class="pure-menu-item"><a href="http://fikiruretgeci.com" class="pure-menu-link">FIKIR URETGECI</a></li>
+                            <li class="pure-menu-item"><a href="http://pure-themes.com" class="pure-menu-link">PURE THEMES</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    document.querySelector('#login-btn').onclick = function() {
+        let username = document.querySelector('#username').value;
+        let password = document.querySelector('#password').value;
+
+        var params = new URLSearchParams();
+        params.append('name', username);
+        params.append('password', password);
+
+        axios.post(
+            '/api/v1/auth/login',
+            params,
+        )
+        .then(function (response) {
+            var token = response.headers['authorization'];
+            var path = response.data;
+
+            if (!token) { // header中没有token
+                console.error('Token not found in headers!');
+            } else { // 在header中找到token
+                localStorage.setItem('jwt', token);
+
+
+                // console.log(path);
+
+                if (response.data.Code === 0) {
+                    // 跳转到登陆后页面
+                    window.location = "/admin/index";
+                } else {
+                    document.querySelector('#message-error').setAttribute('style', 'display:true');
+                    document.querySelector('#alter-failed-login-text').innerHTML = '<p><strong>ERROR:</strong>' + response.data.Message + '</p>';
+                }
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    };
+</script>
+</html>
