@@ -1,9 +1,5 @@
 package model
 
-import (
-	"gorm.io/gorm"
-)
-
 const (
 	CommentStatus_Normal     = 0 // 正常评论
 	CommentStatus_Unreviewed = 1 // 等待审核
@@ -12,8 +8,7 @@ const (
 )
 
 type CommentDb struct {
-	gorm.Model
-	Id         uint
+	ID         uint `gorm:"primaryKey"`
 	CreatedAt  int
 	AuthorId   uint
 	AuthorName string
@@ -23,14 +18,4 @@ type CommentDb struct {
 	Ip         string
 	Text       string
 	Status     uint
-}
-
-func GetCommentById(id uint) (*CommentDb, bool) {
-	var comment CommentDb
-
-	if err := Db.First(&comment, id); err != nil {
-		return &comment, true
-	}
-
-	return nil, false
 }

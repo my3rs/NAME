@@ -8,11 +8,13 @@ import (
 
 type tomlConfig struct {
 	Name       string `toml:"app_name"`
+	Url        string `toml:ROOT_URL`
 	Port       int
-	Mode       string
-	StaticPath string
+	Mode       Env
+	StaticPath string       `toml:"STATIC_PATH"`
 	DB         tomlDatabase `toml:"database"`
 	JWT        tomlJWT      `toml:"jwt"`
+	ApiVersion string       `toml:API_VERSION`
 }
 
 type tomlDatabase struct {
@@ -23,34 +25,32 @@ type tomlDatabase struct {
 }
 
 type tomlJWT struct {
-	SecretKey string
+	secretKey          string `toml:"SECRET_KEY"`
+	AccessTokenMaxAge  int    `toml:"ACCESS_TOKEN_MAX_AGE"`
+	RefreshTokenMaxAge int    `toml:"REFRESH_TOKEN_MAX_AGE"`
+}
+
+func (t *tomlJWT) SecretKey() string {
+	if t.secretKey == "" {
+		return defaultSecretKey
+	}
+	return t.secretKey
 }
 
 const (
-	PROD             Env = "production"
-	DEV              Env = "development"
-	defaultSecretKey     = "chang'emoonadsfwerf"
+	PROD             Env    = "production"
+	DEV              Env    = "development"
+	defaultSecretKey string = "chang'emoonadsfwerf"
 )
 
 type Env string
 
-func (e Env) String() string {
-	return string(e)
-}
-
 var (
 	conf        *tomlConfig
 	once        sync.Once
-	ProjectName = "ChangE"
+	ProjectName = "NAME"
 	Version     = "0.0.1"
 )
-
-func GetSecretKey() string {
-	if Config().JWT.SecretKey == "" {
-		return defaultSecretKey
-	}
-	return Config().JWT.SecretKey
-}
 
 func (c *tomlConfig) Print() {
 	fmt.Println("===================配置文件================")
@@ -65,7 +65,9 @@ func (c *tomlConfig) Print() {
 	fmt.Printf("USER=%s\n", c.DB.User)
 
 	fmt.Println("[JWT]")
-	fmt.Printf("SECRET_KEY=%s\n", c.JWT.SecretKey)
+	fmt.Printf("SECRET_KEY=%s\n", c.JWT.SecretKey())
+	fmt.Printf("ACCESS_TOKEN_MAX_AGE=%d\n", c.JWT.AccessTokenMaxAge)
+	fmt.Printf("REFRESH_TOKEN_MAX_AGE=%d\n", c.JWT.RefreshTokenMaxAge)
 
 	fmt.Println("==========================================")
 }
@@ -82,4 +84,8 @@ func Config() *tomlConfig {
 	})
 
 	return conf
+}
+
+func Init() *tomlConfig {
+	return Config()
 }

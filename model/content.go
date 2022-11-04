@@ -1,50 +1,50 @@
 package model
 
 import (
-	"fmt"
-	"gorm.io/gorm"
 	"html/template"
 	"time"
 )
 
-const (
-	ContentTypePost = 0
-	ContentTypeDigu = 1
-	ContentTypePage = 2
-)
+type ContentType string
 
 const (
-	ContentStatusDraft = 0
+	ContentTypePost ContentType = "post"
+	ContentTypeDigu ContentType = "digu"
+	ContentTypePage ContentType = "page"
+)
+
+type ContentStatus string
+
+const (
+	ContentStatusDraft     ContentStatus = "draft"
+	ContentStatusPublished ContentStatus = "published"
+	ContentStatusPending   ContentStatus = "pending"
 )
 
 type Content struct {
-	gorm.Model
-	ID           uint
-	Type         uint
-	Title        string
-	Abstract     string
-	Text         string
-	AuthorId     uint
-	TemplateId   uint
-	CreatedAt    int64
-	UpdatedAt    int64
-	Status       uint
-	IsPublic     bool
-	AllowComment bool
-	Password     string
+	ID           uint          `gorm:"primaryKey" json:"id"`
+	Type         ContentType   `json:"type"`
+	Title        string        `json:"title"`
+	Abstract     string        `json:"abstract"`
+	Text         string        `json:"text"`
+	AuthorId     uint          `json:"authorID"`
+	Author       User          `json:"author"`
+	TemplateId   uint          `json:"templateID"`
+	CreatedAt    int64         `json:"createdAt" gorm:"autoCreateTime:milli"`
+	UpdatedAt    int64         `json:"updatedAt" gorm:"autoUpdateTime:milli"`
+	PublishAt    int64         `json:"publishAt"`
+	Status       ContentStatus `json:"status"`
+	IsPublic     bool          `json:"isPublic"`
+	AllowComment bool          `json:"allowComment"`
+	Password     string        `json:"-"`
+	Tags         []Tag         `json:"tags" gorm:"many2many:content_tags"`
 
-	ViewsNum    uint
-	CommentsNum uint
+	ViewsNum    uint `json:"viewsNum"`
+	CommentsNum uint `json:"commentsNum"`
 }
 
-func (c *Content) GetAuthor() (*User, bool) {
-	var user User
-
-	if err := Db.First(&user, c.ID); err != nil {
-		return &user, false
-	}
-
-	return &user, true
+func (c *Content) GetAuthor() (User, bool) {
+	return c.Author, true
 }
 
 func (c *Content) GetAbstract() string {
@@ -74,65 +74,4 @@ func (c *Content) GetAbstractHtml() template.HTML {
 	md := c.GetAbstract()
 
 	return Markdown2Html(md)
-}
-
-// GetContentByPage 根据页码和每页数量返回Content Slice
-func GetContentByPage(page int, count int) []Content {
-	if page <= 0 || count >= 100 {
-		return []Content{}
-	}
-
-	leftIndex := (page - 1) * count
-	rightIndex := page * count
-
-	allContent := GetContentSliceOrderedByCreatedTime()
-
-	if len(allContent) < leftIndex-1 ||
-		len(allContent) == 0 {
-		return []Content{}
-	}
-
-	return allContent[leftIndex:rightIndex]
-}
-
-// GetContentSliceOrderedByCreatedTime 获得按”创建时间“降序排列的Content Slice
-func GetContentSliceOrderedByCreatedTime() []Content {
-	var list []Content
-	if result := Db.Order("created_at desc").Find(&list); result.Error != nil {
-		fmt.Println(result.Error)
-	}
-
-	return list
-}
-
-func GetContentSlice() []Content {
-	var list []Content
-
-	if result := Db.Find(&list); result.Error != nil {
-		fmt.Println(result.Error)
-	}
-
-	return list
-}
-
-func GetContentById(id int64) (*Content, bool) {
-	var content Content
-
-	if err := Db.First(&content, id); err != nil {
-		return &content, false
-	}
-
-	return &content, true
-}
-
-func SaveContent(content Content) bool {
-	if (content == Content{}) {
-		return false
-	}
-
-	if result := Db.Create(&content); result.Error != nil {
-		return false
-	}
-
-	return true
 }
