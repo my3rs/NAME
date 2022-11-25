@@ -2,6 +2,7 @@ package controller
 
 import (
 	"NAME/service"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
 )
@@ -16,10 +17,7 @@ func NewIndexController() *IndexController {
 }
 
 func (m *IndexController) Get() interface{} {
-	posts, err := m.Service.GetPostsWithOrder(1, 10, "created_at")
-	if err != nil {
-		m.Ctx.StopWithJSON(400, err.Error())
-	}
+	posts := m.Service.GetPostsWithOrder(1, 10, "created_at desc")
 
 	return mvc.View{
 		Name: "index.html",
