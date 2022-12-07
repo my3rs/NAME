@@ -4,26 +4,34 @@ import (
 	"NAME/middleware"
 	"NAME/model"
 	"NAME/service"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserClaims struct {
-	ID       uint   `json:id`
-	Username string `json:username`
-	Role     string `json:role`
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
 }
 
 type RegisterJSON struct {
-	Username string `json:username`
-	Mail     string `json:mail`
-	Password string `json:password`
+	Username string `json:"username"`
+	Mail     string `json:"mail"`
+	Password string `json:"password"`
 }
 
 type LoginJSON struct {
-	Username string `json:username`
-	Password string `json:password`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type loginResponse struct {
+	Success           bool   `json:"success"`
+	Message           string `json:"message"`
+	IsUsernameInvalid bool   `json:"isUsernameInvalid,omitempty"`
+	IsPasswordInvalid bool   `json:"isPasswordInvalid,omitempty"`
 }
 
 type AuthController struct {
@@ -72,14 +80,16 @@ func (c *AuthController) PostRegisterBy(username string) {
 }
 
 // PostLoginBy handles POST: https://localhost/api/v1/auth/login/:username
-func (c *AuthController) PostLoginBy(username string) {
+func (c *AuthController) PostLoginBy(username string) loginResponse {
 	// Read json from request body
 	var json LoginJSON
 	if err := c.Ctx.ReadJSON(&json); err != nil {
 		c.Ctx.Application().Logger().Infof("Failed to read json from request: ", err.Error())
 		c.Ctx.StatusCode(400)
-		c.Ctx.JSON(iris.Map{"message": err.Error()})
-		return
+		return loginResponse{
+			Success: false,
+			Message: err.Error(),
+		}
 	}
 
 	// Check `username` in URL and request body
@@ -88,22 +98,36 @@ func (c *AuthController) PostLoginBy(username string) {
 			username, json.Username)
 		c.Ctx.StatusCode(400)
 		c.Ctx.JSON(iris.Map{"message": "usernames in URL and body doesn't match"})
-		return
+		return loginResponse{
+			Success:           false,
+			Message:           "usernames in URL and body don't match",
+			IsUsernameInvalid: true,
+		}
 	}
 
 	pair, err := c.UserService.Login(json.Username, json.Password)
 	if err != nil {
 		c.Ctx.Application().Logger().Infof("Failed to login: %v", err.Error())
-		c.Ctx.StopWithJSON(401, iris.Map{"message": err.Error()})
+		// c.Ctx.StatusCode(iris.StatusUnauthorized)
+		return loginResponse{
+			Success:           false,
+			Message:           err.Error(),
+			IsPasswordInvalid: true,
+			IsUsernameInvalid: true,
+		}
 
-		return
 	}
 
 	c.Ctx.StatusCode(200)
 	c.Ctx.Header("authorization", string(pair.AccessToken))
 	c.Ctx.Header("refresh-token", string(pair.RefreshToken))
-	c.Ctx.JSON(iris.Map{"message": "login success: check tokens in the HTTP header"})
-	return
+
+	return loginResponse{
+		Success:           true,
+		IsUsernameInvalid: false,
+		IsPasswordInvalid: false,
+		Message:           "login success: check tokens in the HTTP header",
+	}
 }
 
 // PostRefresh handles POST: https://localhost/api/v1/auth/refresh

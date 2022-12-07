@@ -5,15 +5,16 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/gorm"
 )
 
 type ContentService interface {
 	InsertPost(post model.Content) error
 	DeletePostByIDs(ids []uint) error
 	UpdatePost(content model.Content) error
-	GetPostsWithOrder(pageIndex int, pageSize int, order string) ([]model.Content, error)
+	GetPostsWithOrder(pageIndex int, pageSize int, order string) []model.Content
 	GetPostsCount() int64
 
 	GetContentByID(id int) (model.Content, error)
@@ -38,12 +39,16 @@ func (s *contentService) InsertPost(post model.Content) error {
 		return dict.ErrWrongContentType
 	}
 
-	result := s.Db.First(&model.Content{}, post.ID)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return dict.ErrContentAlreadyExists
-	}
+	// result := s.Db.First(&model.Content{}, post.ID)
+	// if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	// 	return dict.ErrContentAlreadyExists
+	// }
 
-	s.Db.Create(&post)
+	result := s.Db.Create(&post)
+
+	if result.Error != nil {
+		return result.Error
+	}
 	//s.Db.Save(&post)
 
 	return nil
@@ -73,15 +78,11 @@ func (s *contentService) UpdatePost(post model.Content) error {
 	return nil
 }
 
-func (s *contentService) GetPostsWithOrder(pageIndex int, pageSize int, order string) ([]model.Content, error) {
-	if pageSize <= 0 || pageSize >= 100 || pageIndex < 0 {
-		return nil, dict.ErrInvalidParameters
-	}
-
+func (s *contentService) GetPostsWithOrder(pageIndex int, pageSize int, order string) []model.Content {
 	var results []model.Content
 	s.Db.Preload("Author").Preload("Tags").Order(order).Limit(pageSize).Offset(pageIndex*pageSize).Find(&results, "type = ?", model.ContentTypePost)
 
-	return results, nil
+	return results
 }
 
 func (s *contentService) GetPostsCount() int64 {
@@ -93,7 +94,7 @@ func (s *contentService) GetPostsCount() int64 {
 
 func (s *contentService) GetContentByID(id int) (model.Content, error) {
 	var content model.Content
-	result := s.Db.First(&content, id)
+	result := s.Db.Preload("Author").Preload("Tags").First(&content, id)
 	if result.Error != nil {
 		return model.Content{}, result.Error
 	}

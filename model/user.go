@@ -6,8 +6,8 @@ type User struct {
 	HashedPassword string `gorm:"column:password" json:"-"`
 	Mail           string `gorm:"unique" json:"mail"`
 	Url            string `json:"url"`
-	CreatedAt      int    `json:"createdAt"`
-	UpdatedAt      int    `json:"updatedAt"`
+	CreatedAt      int64  `json:"createdAt" gorm:"autoCreateTime:milli"`
+	UpdatedAt      int64  `json:"updatedAt" gorm:"autoUpdateTime:milli"`
 	Activated      bool   `json:"activated"`
 	Role           string `json:"role"`
 }

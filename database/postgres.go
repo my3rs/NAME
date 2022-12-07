@@ -2,11 +2,11 @@ package database
 
 import (
 	"NAME/conf"
-	"NAME/model"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"strings"
 	"sync"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var (
@@ -30,7 +30,7 @@ func initDb() (*gorm.DB, error) {
 			panic("Failed to connect database")
 		}
 
-		db.AutoMigrate(&model.Content{}, &model.User{}, &model.Tag{})
+		// db.AutoMigrate(&model.Content{}, &model.User{}, &model.Tag{})
 	})
 
 	return db, nil

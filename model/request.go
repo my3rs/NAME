@@ -13,9 +13,11 @@ type PostRequest struct {
 	Text         string        `json:"text"`
 	AuthorID     uint          `json:"authorID"`
 	Status       ContentStatus `json:"status"`
+	CreatedAt    int64         `json:"createdAt"`
+	UpdatedAt    int64         `json:"updatedAt"`
 	PublishAt    int64         `json:"publishAt"`
-	IsPublic     bool          `json:"isPublic"`
 	AllowComment bool          `json:"allowComment"`
+	Tags         []Tag         `json:"tags"`
 }
 
 type DeleteRequest struct {

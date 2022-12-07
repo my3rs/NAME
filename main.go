@@ -2,7 +2,6 @@ package main
 
 import (
 	"NAME/conf"
-	_ "NAME/docs"
 	"NAME/route"
 	"strconv"
 
@@ -28,8 +27,10 @@ func main() {
 	// 初始化一些设置
 	route.InitRoute(app)
 
-	app.RegisterView(iris.HTML("./web/view", ".html"))
-	app.HandleDir("/public", "./web/public")
+	tmpl := iris.HTML("./web/view", ".tmpl")
+	tmpl.Reload(true)
+	app.RegisterView(tmpl)
+	app.HandleDir("/assets", "./web/assets")
 
 	// Listens and serves incoming http requests
 	// on http://localhost:8000.

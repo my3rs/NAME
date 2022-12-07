@@ -4,13 +4,22 @@ import (
 	"NAME/database"
 	"NAME/dict"
 	"NAME/model"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/gorm"
 )
+
+const sqlGetTagsWithPath = `SELECT tag1.id,tag1.no, array_to_string(array_agg(tag2.text ORDER BY tag2.path), ' / ') As text
+FROM public.tags As tag1 
+INNER JOIN public.tags As tag2 ON (tag2.path @> tag1.path)
+GROUP BY tag1.id, tag1.path, tag1.text
+ORDER BY text;
+`
 
 type TagService interface {
 	GetTagByID(id uint) (model.Tag, error)
-	GetAllTags() ([]model.Tag, error)
+	GetAllTags() []model.Tag
+	GetAllTagsWithPath() []model.Tag
 	GetTagsWithOrder(pageIndex int, pageSize int, order string) ([]model.Tag, error)
 	GetTagsCount() int64
 }
@@ -36,13 +45,21 @@ func (s *tagService) GetTagByID(id uint) (model.Tag, error) {
 	return tag, nil
 }
 
-func (s *tagService) GetAllTags() ([]model.Tag, error) {
+func (s *tagService) GetAllTags() []model.Tag {
 	var tags []model.Tag
 	if result := s.DB.Order("path").Find(&tags); result.Error != nil {
-		return []model.Tag{}, result.Error
+
+		return []model.Tag{}
 	}
 
-	return tags, nil
+	return tags
+}
+
+func (s *tagService) GetAllTagsWithPath() []model.Tag {
+	var tags []model.Tag
+	s.DB.Raw(sqlGetTagsWithPath).Scan(&tags)
+
+	return tags
 }
 
 func (s *tagService) GetTagsWithOrder(pageIndex int, pageSize int, order string) ([]model.Tag, error) {

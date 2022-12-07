@@ -4,10 +4,11 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
-	"github.com/kataras/iris/v12"
 	"math/rand"
 	"strconv"
 	"strings"
+
+	"github.com/kataras/iris/v12"
 )
 
 type PostController struct {
@@ -29,18 +30,6 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-// Get handles GET /api/v1/posts
-// @Summary Get posts list
-// @Description Get posts list
-// @Accept  json
-// @Produce  json
-// @Param 	Authorization	header	string	true	"Access token with the prefix `Bearer `"
-// @Param   pageSize    query  	int      true        "page size"	 default(1)
-// @Param 	pageIndex	query	int 		true		"page index"	default(1)
-// @Param	orderBy		query	string  	false 		"order"		default("created_at desc")
-// @Success 200 		{object} model.Response	"success"
-// @Failure 400 		{object} model.Response "Bad request"
-// @Router /api/v1/posts [get]
 func (c *PostController) Get(req model.QueryRequest) model.Response {
 
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
@@ -70,15 +59,11 @@ func (c *PostController) Get(req model.QueryRequest) model.Response {
 	}
 
 	if len(req.Order) == 0 {
-		req.Order = "id asc"
+		req.Order = "created_at desc"
 	}
 	page.Order = req.Order
 
-	posts, err := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
-	if err != nil {
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
-	}
+	posts := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
 
 	rsp.Data = posts
 	rsp.Page = &page
@@ -101,18 +86,6 @@ func (c *PostController) GetBy(id int) model.Response {
 	}
 }
 
-// Post handles POST /api/v1/posts
-// @Summary Create a new post
-// @Description Create a new post
-// @Accept  json
-// @Produce  json
-// @Param 	Authorization	header	string	true	"Access token with the prefix `Bearer `"
-// @Param   post    	body  	model.PostRequest      true        "Post"
-// @Success 200 		{object} model.Response	"success"
-// @Failure 400 		{object} model.Response "Bad request"
-// @Security     ApiKeyAuth
-// @Security     OAuth2Implicit[admin, write]
-// @Router /api/v1/posts [post]
 func (c *PostController) Post(req model.PostRequest) model.Response {
 	var post = model.Content{
 		Type:         model.ContentTypePost,
@@ -120,10 +93,10 @@ func (c *PostController) Post(req model.PostRequest) model.Response {
 		Text:         req.Text,
 		Abstract:     req.Abstract,
 		AuthorId:     req.AuthorID,
-		IsPublic:     req.IsPublic,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
+		Tags:         req.Tags,
 	}
 
 	err := c.Service.InsertPost(post)
@@ -137,7 +110,19 @@ func (c *PostController) Post(req model.PostRequest) model.Response {
 	return model.Response{Success: true}
 }
 
-func (c *PostController) Put(req model.PostRequest) model.Response {
+func (c *PostController) PutBy(id int) model.Response {
+	var req model.PostRequest
+	err := c.Ctx.ReadJSON(&req)
+	if err != nil {
+		c.Ctx.StatusCode(400)
+		return model.Response{Success: false, Message: err.Error()}
+	}
+
+	if id != int(req.ID) {
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.Response{Success: false, Message: "Check IDs in URL and body"}
+	}
+
 	var post = model.Content{
 		ID:           req.ID,
 		Type:         model.ContentTypePost,
@@ -145,13 +130,15 @@ func (c *PostController) Put(req model.PostRequest) model.Response {
 		Text:         req.Text,
 		Abstract:     req.Abstract,
 		AuthorId:     req.AuthorID,
-		IsPublic:     req.IsPublic,
+		CreatedAt:    req.CreatedAt,
+		UpdatedAt:    req.UpdatedAt,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
+		Tags:         req.Tags,
 	}
+	err = c.Service.UpdatePost(post)
 
-	err := c.Service.UpdatePost(post)
 	if err != nil {
 		c.Ctx.Application().Logger().Info(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -159,11 +146,36 @@ func (c *PostController) Put(req model.PostRequest) model.Response {
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-
-	return model.Response{
-		Success: true,
-	}
+	return model.Response{Success: true}
 }
+
+// func (c *PostController) Put(req model.PostRequest) model.Response {
+// 	var post = model.Content{
+// 		ID:           req.ID,
+// 		Type:         model.ContentTypePost,
+// 		Title:        req.Title,
+// 		Text:         req.Text,
+// 		Abstract:     req.Abstract,
+// 		AuthorId:     req.AuthorID,
+// 		IsPublic:     req.IsPublic,
+// 		PublishAt:    req.PublishAt,
+// 		Status:       req.Status,
+// 		AllowComment: req.AllowComment,
+// 	}
+
+// 	err := c.Service.UpdatePost(post)
+// 	if err != nil {
+// 		c.Ctx.Application().Logger().Info(err.Error())
+// 		c.Ctx.StatusCode(iris.StatusBadRequest)
+// 		return model.Response{Success: false, Message: err.Error()}
+// 	}
+
+// 	c.Ctx.StatusCode(iris.StatusOK)
+
+// 	return model.Response{
+// 		Success: true,
+// 	}
+// }
 
 // DeleteBy handles DELETE /api/v1/posts/{id1,id2,id3...:string}
 func (c *PostController) DeleteBy(idsReq string) model.Response {
@@ -177,6 +189,9 @@ func (c *PostController) DeleteBy(idsReq string) model.Response {
 	var ids []uint
 	idsString := strings.Split(idsReq, ",")
 	for _, item := range idsString {
+		if len(item) == 0 {
+			continue
+		}
 		id, err := strconv.Atoi(item)
 		if err != nil {
 			c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -196,37 +211,42 @@ func (c *PostController) DeleteBy(idsReq string) model.Response {
 }
 
 // PostInit handles POST /api/v1/posts/init
-func (c *PostController) PostInit() {
+func (c *PostController) PostInit() iris.Map {
 	var json map[string]int
 	c.Ctx.ReadJSON(&json)
 
+	c.Ctx.Application().Logger().Info(json)
+
 	count := json["count"]
 	if count <= 0 {
-		c.Ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"message": dict.ErrInvalidParameters})
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return iris.Map{"message": dict.ErrInvalidParameters}
 	}
+
+	c.Ctx.Application().Logger().Info("Init ", count, " posts")
 
 	for i := 0; i < count; i++ {
 
 		var tmp = model.Content{
 			Type:     model.ContentTypePost,
 			Title:    RandStringRunes(10),
-			Abstract: RandStringRunes(140),
-			Text:     RandStringRunes(500),
+			Abstract: RandStringRunes(70),
+			Text:     RandStringRunes(200),
 			Author: model.User{
 				ID: 1,
 			},
-			IsPublic:     true,
 			AllowComment: true,
 			ViewsNum:     0,
 			CommentsNum:  0,
 		}
 		err := c.Service.InsertPost(tmp)
 		if err != nil {
-			c.Ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"message": err.Error()})
+			c.Ctx.StatusCode(iris.StatusBadRequest)
+			return iris.Map{"message": err.Error()}
 		}
 
 	}
 
 	c.Ctx.StatusCode(200)
-	c.Ctx.JSON(iris.Map{"message": "Success to init posts"})
+	return iris.Map{"message": "Success to init posts"}
 }

@@ -4,7 +4,7 @@ type Response struct {
 	Success bool      `json:"success,omitempty"`
 	Message string    `json:"message,omitempty"`
 	Data    []Content `json:"data,omitempty"`
-	Page    *Page     `json:"page,omitempty"`
+	Page    *Page     `json:"pagination,omitempty"`
 }
 
 type TestResponse struct {

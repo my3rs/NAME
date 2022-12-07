@@ -3,8 +3,13 @@ package controller
 import (
 	"NAME/model"
 	"NAME/service"
+
 	"github.com/kataras/iris/v12"
 )
+
+type getTagsRequest struct {
+	Format string `url:"format" json:"format"`
+}
 
 type TagController struct {
 	Ctx     iris.Context
@@ -27,11 +32,15 @@ func NewTagController() *TagController {
 // @Success 200 		{object} model.Response	"success"
 // @Failure 400 		{object} model.Response "Bad request"
 // @Router /api/v1/posts [get]
-func (c *TagController) Get(request model.QueryRequest) iris.Map {
-	tags, err := c.Service.GetAllTags()
-	if err != nil {
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{"success": true}
+func (c *TagController) Get(request getTagsRequest) iris.Map {
+	var tags []model.Tag
+
+	switch request.Format {
+	case "withPath":
+		tags = c.Service.GetAllTagsWithPath()
+
+	default:
+		tags = c.Service.GetAllTags()
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)

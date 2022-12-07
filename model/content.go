@@ -22,29 +22,30 @@ const (
 )
 
 type Content struct {
-	ID           uint          `gorm:"primaryKey" json:"id"`
-	Type         ContentType   `json:"type"`
-	Title        string        `json:"title"`
-	Abstract     string        `json:"abstract"`
-	Text         string        `json:"text"`
-	AuthorId     uint          `json:"authorID"`
-	Author       User          `json:"author"`
-	TemplateId   uint          `json:"templateID"`
+	ID       uint        `gorm:"primaryKey" json:"id"`
+	Type     ContentType `json:"type"`
+	Title    string      `json:"title"`
+	Abstract string      `json:"abstract"`
+	Text     string      `json:"text"`
+
+	AuthorId uint `json:"-"`
+	Author   User `json:"author"`
+
 	CreatedAt    int64         `json:"createdAt" gorm:"autoCreateTime:milli"`
 	UpdatedAt    int64         `json:"updatedAt" gorm:"autoUpdateTime:milli"`
 	PublishAt    int64         `json:"publishAt"`
 	Status       ContentStatus `json:"status"`
-	IsPublic     bool          `json:"isPublic"`
-	AllowComment bool          `json:"allowComment"`
+	AllowComment bool          `json:"-"`
 	Password     string        `json:"-"`
-	Tags         []Tag         `json:"tags" gorm:"many2many:content_tags"`
+
+	Tags []Tag `json:"tags" gorm:"many2many:content_tags"`
 
 	ViewsNum    uint `json:"viewsNum"`
 	CommentsNum uint `json:"commentsNum"`
 }
 
-func (c *Content) GetAuthor() (User, bool) {
-	return c.Author, true
+func (c *Content) GetAuthor() User {
+	return c.Author
 }
 
 func (c *Content) GetAbstract() string {
