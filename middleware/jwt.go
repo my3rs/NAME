@@ -30,19 +30,17 @@ const (
 )
 
 var (
-	signer   = jwt.NewSigner(jwt.HS256, conf.Config().JWT.SecretKey(), time.Minute*AccessTokenMaxAge)
-	verifier = jwt.NewVerifier(jwt.HS256, conf.Config().JWT.SecretKey())
+	signer   *jwt.Signer
+	verifier *jwt.Verifier
 	once     sync.Once
 )
 
 func JwtMiddleware() iris.Handler {
 	// init only once
-	//once.Do(func() {
-	//	sharedKey := make([]byte, 32)
-	//	_, _ = rand.Read(sharedKey)
-	//	signer.WithEncryption(sharedKey, nil)
-	//	verifier.WithDecryption(sharedKey, nil)
-	//})
+	once.Do(func() {
+		signer = jwt.NewSigner(jwt.HS256, conf.Config().JWT.SecretKey(), time.Minute*AccessTokenMaxAge)
+		verifier = jwt.NewVerifier(jwt.HS256, conf.Config().JWT.SecretKey())
+	})
 
 	return func(ctx iris.Context) {
 		VerifyAccessToken(ctx)

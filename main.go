@@ -3,16 +3,22 @@ package main
 import (
 	"NAME/conf"
 	"NAME/route"
+	"flag"
 	"strconv"
 
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/cors"
 )
 
-func main() {
-	app := iris.New()
+var configFilePath = flag.String("c", "./name.conf", "配置文件路径")
 
-	conf.Init()
+func main() {
+	flag.Parse()
+
+	app := iris.New()
+	app.Logger().Info("配置文件位置：", *configFilePath)
+
+	conf.Init(*configFilePath)
 
 	// Register CORS (allow any origin to pass through) middleware.
 	app.UseRouter(cors.New().

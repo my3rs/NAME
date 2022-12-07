@@ -3,8 +3,9 @@ package conf
 import (
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"sync"
 )
+
+var configFile = "./name.conf"
 
 type tomlConfig struct {
 	Name       string `toml:"app_name"`
@@ -47,7 +48,6 @@ type Env string
 
 var (
 	conf        *tomlConfig
-	once        sync.Once
 	ProjectName = "NAME"
 	Version     = "0.0.1"
 )
@@ -74,18 +74,29 @@ func (c *tomlConfig) Print() {
 
 // Config 单例模式
 func Config() *tomlConfig {
-	// exec only once
-	once.Do(func() {
-		if _, err := toml.DecodeFile("./conf/nine.conf", &conf); err != nil {
-			panic(err)
-		}
+	return GetConfig()
+}
 
-		conf.Print()
-	})
+func initConfig() *tomlConfig {
+	if _, err := toml.DecodeFile(configFile, &conf); err != nil {
+		panic(err)
+	}
+
+	conf.Print()
 
 	return conf
 }
 
-func Init() *tomlConfig {
-	return Config()
+func GetConfig() *tomlConfig {
+	if conf != nil {
+		return conf
+	} else {
+		return initConfig()
+	}
+}
+
+func Init(path string) *tomlConfig {
+	configFile = path
+
+	return GetConfig()
 }
