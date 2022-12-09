@@ -8,14 +8,13 @@ import (
 var configFile = "./name.conf"
 
 type tomlConfig struct {
-	Name       string `toml:"app_name"`
-	Url        string `toml:ROOT_URL`
+	Url        string `toml:"ROOT_URL"`
 	Port       int
 	Mode       Env
 	StaticPath string       `toml:"STATIC_PATH"`
 	DB         tomlDatabase `toml:"database"`
 	JWT        tomlJWT      `toml:"jwt"`
-	ApiVersion string       `toml:API_VERSION`
+	ApiVersion string       `toml:"API_VERSION"`
 }
 
 type tomlDatabase struct {
@@ -54,7 +53,6 @@ var (
 
 func (c *tomlConfig) Print() {
 	fmt.Println("===================配置文件================")
-	fmt.Printf("NAME=%s\n", c.Name)
 	fmt.Printf("PORT=%d\n", c.Port)
 	fmt.Printf("MODE=%s\n", c.Mode)
 	fmt.Printf("STATIC_PATH=%s\n", c.StaticPath)
