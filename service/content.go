@@ -16,6 +16,7 @@ type ContentService interface {
 	UpdatePost(content model.Content) error
 	GetPostsWithOrder(pageIndex int, pageSize int, order string) []model.Content
 	GetPostsCount() int64
+	GetPostByID(id int) model.Content
 
 	GetContentByID(id int) (model.Content, error)
 
@@ -90,6 +91,17 @@ func (s *contentService) GetPostsCount() int64 {
 	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePost).Count(&count)
 
 	return count
+}
+
+func (s *contentService) GetPostByID(id int) model.Content {
+	var post model.Content
+	result := s.Db.Model(&model.Content{}).Where("id = ?", id).Take(&post)
+
+	if result.Error != nil || post.Type != model.ContentTypePost {
+		return model.Content{}
+	}
+
+	return post
 }
 
 func (s *contentService) GetContentByID(id int) (model.Content, error) {

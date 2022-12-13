@@ -61,7 +61,7 @@ func InitRoute(app *iris.Application) {
 		mvcApp.Handle(web.NewIndexController())
 	})
 
-	mvc.Configure(app.Party("/post"), func(mvcApp *mvc.Application) {
+	mvc.Configure(app.Party("/posts"), func(mvcApp *mvc.Application) {
 		mvcApp.Handle(web.NewPostController())
 	})
 
