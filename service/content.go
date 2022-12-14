@@ -95,7 +95,7 @@ func (s *contentService) GetPostsCount() int64 {
 
 func (s *contentService) GetPostByID(id int) model.Content {
 	var post model.Content
-	result := s.Db.Model(&model.Content{}).Where("id = ?", id).Take(&post)
+	result := s.Db.Model(&model.Content{}).Preload("Author").Where("id = ?", id).Take(&post)
 
 	if result.Error != nil || post.Type != model.ContentTypePost {
 		return model.Content{}
