@@ -20,7 +20,7 @@ func (m *IndexController) Get() interface{} {
 	posts := m.Service.GetPostsWithOrder(1, 10, "created_at desc")
 
 	return mvc.View{
-		Name: "layout.tmpl",
+		Name: "layout.gohtml",
 		Data: iris.Map{
 			"Posts":   posts,
 			"isIndex": true,

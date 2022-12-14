@@ -33,7 +33,7 @@ func main() {
 	// 初始化一些设置
 	route.InitRoute(app)
 
-	tmpl := iris.HTML("./web/view", ".tmpl")
+	tmpl := iris.HTML("./web/view", ".gohtml")
 	tmpl.Reload(true)
 	app.RegisterView(tmpl)
 	app.HandleDir("/assets", "./web/assets")
