@@ -5,6 +5,9 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday/v2"
+	"html/template"
 	"log"
 
 	"gorm.io/gorm"
@@ -33,6 +36,13 @@ func NewContentService() ContentService {
 		log.Panic(err.Error())
 	}
 	return &contentService{Db: db}
+}
+
+func Markdown2Html(markdown string) template.HTML {
+	unsafe := blackfriday.Run([]byte(markdown))
+	html := template.HTML(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
+
+	return html
 }
 
 func (s *contentService) InsertPost(post model.Content) error {
