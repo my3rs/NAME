@@ -1,7 +1,6 @@
 package model
 
 import (
-	"html/template"
 	"time"
 )
 
@@ -69,10 +68,4 @@ func (c *Content) GetTime() string {
 func (c *Content) GetDateAndTime() string {
 	t := time.Unix(c.CreatedAt, 0).Format("2006-01-02 15:04:05")
 	return t
-}
-
-func (c *Content) GetAbstractHtml() template.HTML {
-	md := c.GetAbstract()
-
-	return Markdown2Html(md)
 }
