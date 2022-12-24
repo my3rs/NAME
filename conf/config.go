@@ -3,14 +3,18 @@ package conf
 import (
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/kataras/iris/v12"
 )
 
 var configFile = "./name.conf"
+
+const MaxBodySize = 20 * iris.MB
 
 type tomlConfig struct {
 	Url        string `toml:"ROOT_URL"`
 	Port       int
 	Mode       Env
+	DataPath   string
 	StaticPath string       `toml:"STATIC_PATH"`
 	DB         tomlDatabase `toml:"database"`
 	JWT        tomlJWT      `toml:"jwt"`
@@ -56,6 +60,7 @@ func (c *tomlConfig) Print() {
 	fmt.Printf("PORT=%d\n", c.Port)
 	fmt.Printf("MODE=%s\n", c.Mode)
 	fmt.Printf("STATIC_PATH=%s\n", c.StaticPath)
+	fmt.Printf("DATA_PATH=%s\n", c.DataPath)
 
 	fmt.Println("[DATABASE]")
 	fmt.Printf("HOST=%s\n", c.DB.Host)
