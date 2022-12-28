@@ -17,9 +17,11 @@ type ContentService interface {
 	InsertPost(post model.Content) error
 	DeletePostByIDs(ids []uint) error
 	UpdatePost(content model.Content) error
+
 	GetPostsWithOrder(pageIndex int, pageSize int, order string) []model.Content
 	GetPostsCount() int64
 	GetPostByID(id int) model.Content
+	GetFormattedPostByID(id int) model.Content
 
 	GetContentByID(id int) (model.Content, error)
 
@@ -109,6 +111,15 @@ func (s *contentService) GetPostByID(id int) model.Content {
 
 	if result.Error != nil || post.Type != model.ContentTypePost {
 		return model.Content{}
+	}
+
+	return post
+}
+
+func (s *contentService) GetFormattedPostByID(id int) model.Content {
+	post := s.GetPostByID(id)
+	if post.ID > 0 {
+		post.TextHTML = Markdown2Html(post.Text)
 	}
 
 	return post
