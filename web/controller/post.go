@@ -15,12 +15,8 @@ func NewPostController() *PostController {
 	return &PostController{ContentService: service.NewContentService()}
 }
 
-func (m *PostController) Get() string {
-	return "hey"
-}
-
 func (c *PostController) GetBy(id int) mvc.View {
-	post := c.ContentService.GetPostByID(id)
+	post := c.ContentService.GetFormattedPostByID(id)
 	return mvc.View{
 		Name: "post.gohtml",
 		Data: iris.Map{
@@ -46,7 +42,3 @@ func (c *PostController) GetBy(id int) mvc.View {
 //		return 404
 //	}
 //}
-
-func (m *PostController) GetHello() interface{} {
-	return 404
-}
