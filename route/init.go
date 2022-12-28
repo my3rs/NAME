@@ -7,13 +7,29 @@ import (
 	web "NAME/web/controller"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
+	"os"
 )
 
 func InitRoute(app *iris.Application) {
+	// create directory to store uploaded files
+	os.Mkdir(conf.Config().DataPath, 0700)
+	err := os.Mkdir(conf.Config().DataPath+"/uploads", 0700)
+	if err != nil {
+		app.Logger().Error("Failed to create data folder: ", err)
+	}
+
 	// backend
 	apiAuth := app.Party("/api/v1/auth")
 	mvc.Configure(apiAuth, func(mvcApp *mvc.Application) {
 		mvcApp.Handle(controller.NewAuthController())
+	})
+
+	attachments := app.Party("/api/v1/attachments")
+	if conf.Config().Mode == conf.PROD {
+		attachments.Use(middleware.JwtMiddleware())
+	}
+	mvc.Configure(attachments, func(application *mvc.Application) {
+		application.Handle(controller.NewAttachmentController())
 	})
 
 	posts := app.Party("/api/v1/posts")

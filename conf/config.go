@@ -14,7 +14,7 @@ type tomlConfig struct {
 	Url        string `toml:"ROOT_URL"`
 	Port       int
 	Mode       Env
-	DataPath   string
+	DataPath   string       `toml:"DATA_PATH"`
 	StaticPath string       `toml:"STATIC_PATH"`
 	DB         tomlDatabase `toml:"database"`
 	JWT        tomlJWT      `toml:"jwt"`

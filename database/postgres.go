@@ -2,6 +2,7 @@ package database
 
 import (
 	"NAME/conf"
+	"NAME/model"
 	"strings"
 	"sync"
 
@@ -31,6 +32,7 @@ func initDb() (*gorm.DB, error) {
 		}
 
 		// db.AutoMigrate(&model.Content{}, &model.User{}, &model.Tag{})
+		db.AutoMigrate(&model.Attachment{})
 	})
 
 	return db, nil
