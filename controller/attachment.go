@@ -6,17 +6,18 @@ import (
 	"NAME/service"
 	"github.com/kataras/iris/v12"
 	"os"
+	"path"
 	"strconv"
 	"time"
 )
 
 type AttachmentController struct {
-	Ctx      iris.Context
-	Uploader service.Uploader
+	Ctx               iris.Context
+	AttachmentService service.AttachmentService
 }
 
 func NewAttachmentController() *AttachmentController {
-	return &AttachmentController{Uploader: service.NewUploader()}
+	return &AttachmentController{AttachmentService: service.NewAttachmentService()}
 }
 
 func (c *AttachmentController) Post() {
@@ -71,7 +72,8 @@ func (c *AttachmentController) Post() {
 	message := ""
 	for _, file := range files {
 		oldFileName := file.Filename
-		file.Filename = strconv.FormatInt(time.Now().UnixMilli(), 10)
+		suffix := path.Ext(file.Filename)
+		file.Filename = strconv.FormatInt(time.Now().UnixMilli(), 10) + suffix
 
 		// Insert `Attachment` to database
 		attachment := model.Attachment{
@@ -81,7 +83,7 @@ func (c *AttachmentController) Post() {
 		}
 		c.Ctx.Application().Logger().Debugf("Inserting attachment: %+v", attachment)
 
-		if e := c.Uploader.InsertAttachment(attachment); e != nil {
+		if e := c.AttachmentService.InsertAttachment(attachment); e != nil {
 			message += " failed to insert attachment: " + oldFileName
 		}
 

@@ -7,24 +7,24 @@ import (
 	"log"
 )
 
-type Uploader interface {
+type AttachmentService interface {
 	InsertAttachment(attachment model.Attachment) error
 }
 
-type uploader struct {
+type attachmentService struct {
 	DB *gorm.DB
 }
 
-func NewUploader() Uploader {
+func NewAttachmentService() AttachmentService {
 	db, err := database.GetDb()
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	return &uploader{DB: db}
+	return &attachmentService{DB: db}
 }
 
-func (u *uploader) InsertAttachment(attachment model.Attachment) error {
+func (u *attachmentService) InsertAttachment(attachment model.Attachment) error {
 	result := u.DB.Create(&attachment)
 
 	return result.Error
