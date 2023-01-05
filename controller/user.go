@@ -14,7 +14,7 @@ type UserController struct {
 }
 
 func NewUserController() *UserController {
-	return &UserController{UserService: service.NewUserService()}
+	return &UserController{UserService: service.GetUserService()}
 }
 
 func (c *UserController) Get(req model.QueryRequest) model.TestResponse {

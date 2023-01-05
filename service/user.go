@@ -3,13 +3,17 @@ package service
 import (
 	"NAME/database"
 	"NAME/dict"
-	"NAME/middleware"
 	"NAME/model"
 	"errors"
-	"github.com/kataras/iris/v12/middleware/jwt"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"log"
+	"sync"
+)
+
+var (
+	once    sync.Once
+	service *userService
 )
 
 type UserService interface {
@@ -23,20 +27,22 @@ type UserService interface {
 	DeleteUser(model.User) error
 	DeleteUserById(int) error
 	VerifyPassword(model.User, string) error
-	Login(string, string) (jwt.TokenPair, error)
 }
 
 type userService struct {
 	Db *gorm.DB
 }
 
-func NewUserService() *userService {
-	db, err := database.GetDb()
-	if err != nil {
-		log.Panic(err.Error())
-	}
+func GetUserService() *userService {
+	once.Do(func() {
+		db, err := database.GetDb()
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		service = &userService{Db: db}
+	})
 
-	return &userService{Db: db}
+	return service
 }
 
 func (s *userService) GetUserById(id int) (model.User, error) {
@@ -120,24 +126,4 @@ func (s *userService) VerifyPassword(user model.User, password string) error {
 	}
 
 	return nil
-}
-
-func (s *userService) Login(name string, passwd string) (jwt.TokenPair, error) {
-	user, err := s.GetUserByName(name)
-	if err != nil {
-		return jwt.TokenPair{}, err
-	}
-
-	err = s.VerifyPassword(user, passwd)
-	if err != nil {
-		return jwt.TokenPair{}, err
-	}
-
-	var pair jwt.TokenPair
-	pair, err = middleware.GenerateTokenPair(user.ID, user.Name)
-	if err != nil {
-		return jwt.TokenPair{}, err
-	}
-
-	return pair, nil
 }
