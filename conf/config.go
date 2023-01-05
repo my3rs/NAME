@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/kataras/iris/v12"
+	"log"
+	"os"
+	"sync"
 )
 
-var configFile = "./name.conf"
+var configFile = ""
 
 const MaxBodySize = 20 * iris.MB
 
@@ -32,6 +35,8 @@ type tomlJWT struct {
 	secretKey          string `toml:"SECRET_KEY"`
 	AccessTokenMaxAge  int    `toml:"ACCESS_TOKEN_MAX_AGE"`
 	RefreshTokenMaxAge int    `toml:"REFRESH_TOKEN_MAX_AGE"`
+	PublicKey          string `toml:"PUBLIC_KEY"`
+	PrivateKey         string `toml:"PRIVATE_KEY"`
 }
 
 func (t *tomlJWT) SecretKey() string {
@@ -50,6 +55,7 @@ const (
 type Env string
 
 var (
+	once        sync.Once
 	conf        *tomlConfig
 	ProjectName = "NAME"
 	Version     = "0.0.1"
@@ -77,29 +83,28 @@ func (c *tomlConfig) Print() {
 
 // Config 单例模式
 func Config() *tomlConfig {
-	return GetConfig()
-}
+	once.Do(func() {
+		if _, err := toml.DecodeFile(configFile, &conf); err != nil {
+			panic(err)
+		}
 
-func initConfig() *tomlConfig {
-	if _, err := toml.DecodeFile(configFile, &conf); err != nil {
-		panic(err)
-	}
+		info, err := os.Stat(conf.JWT.PrivateKey)
+		if err != nil {
+			log.Println("PrivateKey: ", conf.JWT.PrivateKey, info.IsDir())
+			panic(err)
+		}
+		info, err = os.Stat(conf.JWT.PublicKey)
+		if err != nil {
+			log.Println("PublicKey: ", conf.JWT.PrivateKey, info)
+			panic(err)
+		}
 
-	conf.Print()
+		conf.Print()
 
+	})
 	return conf
 }
 
-func GetConfig() *tomlConfig {
-	if conf != nil {
-		return conf
-	} else {
-		return initConfig()
-	}
-}
-
-func Init(path string) *tomlConfig {
+func SetConfigPath(path string) {
 	configFile = path
-
-	return GetConfig()
 }

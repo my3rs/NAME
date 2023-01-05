@@ -16,9 +16,10 @@ func main() {
 	flag.Parse()
 
 	app := iris.New()
+	//app.Logger().SetLevel("debug")
 	app.Logger().Info("配置文件位置：", *configFilePath)
 
-	conf.Init(*configFilePath)
+	conf.SetConfigPath(*configFilePath)
 
 	// Register CORS (allow any origin to pass through) middleware.
 	app.UseRouter(cors.New().
@@ -37,6 +38,7 @@ func main() {
 	tmpl.Reload(true)
 	app.RegisterView(tmpl)
 	app.HandleDir("/assets", "./web/assets")
+	app.HandleDir("/uploads", conf.Config().DataPath+"/uploads")
 
 	// Listens and serves incoming http requests
 	// on http://localhost:8000.

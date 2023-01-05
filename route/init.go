@@ -32,9 +32,23 @@ func InitRoute(app *iris.Application) {
 		application.Handle(controller.NewAttachmentController())
 	})
 
+	jwtFilter := func(ctx iris.Context) bool {
+		if method := ctx.Method(); method == iris.MethodGet {
+			ctx.Next()
+		}
+		return true
+	}
+	jwtMiddleware := iris.NewConditionalHandler(jwtFilter, middleware.JwtMiddleware())
+
 	posts := app.Party("/api/v1/posts")
 	if conf.Config().Mode == conf.PROD {
-		posts.Use(middleware.JwtMiddleware())
+		posts.Use(jwtMiddleware)
+		//posts.Get("/").RemoveHandler()
+		//posts.Get("/").RemoveHandler("middleware.JwtMiddleware.func2")
+		//for _, h := range posts.Get("/", func(context2 iris.Context) {}).Handlers {
+		//	log.Print("xxx ", context.HandlerName(h))
+		//}
+		//log.Printf("xxxx %+v", posts.Get("/", func(context2 iris.Context) {}).Handlers)
 	}
 	mvc.Configure(posts, func(application *mvc.Application) {
 		application.Handle(controller.NewPostController())
@@ -51,6 +65,7 @@ func InitRoute(app *iris.Application) {
 	users := app.Party("/api/v1/users")
 	if conf.Config().Mode == conf.PROD {
 		users.Use(middleware.JwtMiddleware())
+
 	}
 	mvc.Configure(users, func(application *mvc.Application) {
 		application.Handle(controller.NewUserController())
