@@ -40,7 +40,7 @@ type AuthController struct {
 }
 
 func NewAuthController() *AuthController {
-	return &AuthController{UserService: service.NewUserService()}
+	return &AuthController{UserService: service.GetUserService()}
 }
 
 // PostRegisterBy handles POST: https://localhost/api/v1/auth/register/:username
@@ -105,17 +105,32 @@ func (c *AuthController) PostLoginBy(username string) loginResponse {
 		}
 	}
 
-	pair, err := c.UserService.Login(json.Username, json.Password)
+	// read `User` from database
+	user, err := c.UserService.GetUserByName(json.Username)
 	if err != nil {
-		c.Ctx.Application().Logger().Infof("Failed to login: %v", err.Error())
-		// c.Ctx.StatusCode(iris.StatusUnauthorized)
-		return loginResponse{
-			Success:           false,
-			Message:           err.Error(),
-			IsPasswordInvalid: true,
-			IsUsernameInvalid: true,
-		}
+		c.Ctx.StatusCode(iris.StatusBadRequest)
 
+		return loginResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+
+	err = c.UserService.VerifyPassword(user, json.Password)
+	if err != nil {
+		return loginResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+	}
+
+	var pair jwt.TokenPair
+	pair, err = middleware.GenerateTokenPair(user)
+	if err != nil {
+		return loginResponse{
+			Success: false,
+			Message: err.Error(),
+		}
 	}
 
 	c.Ctx.StatusCode(200)
@@ -131,33 +146,10 @@ func (c *AuthController) PostLoginBy(username string) loginResponse {
 }
 
 // PostRefresh handles POST: https://localhost/api/v1/auth/refresh
-// @func: verify the refresh token and then generate a new token pair, both access token and refresh token
+// @func: verify the refresh token and then generate a new token pair,
+// both access token and refresh token
 func (c *AuthController) PostRefresh() {
-	// Verify refresh token and get username from the token
-	username := middleware.VerifyRefreshTokenAndGetUserName(c.Ctx)
-	if len(username) == 0 {
-		c.Ctx.StopWithJSON(401, iris.Map{"message": "invalid refresh token"})
-		return
-	}
-
-	user, err := c.UserService.GetUserByName(username)
-	if err != nil {
-		c.Ctx.StopWithJSON(401, iris.Map{"message": err.Error()})
-		return
-	}
-
-	// Generate new token pair
-	tokens, err := middleware.GenerateTokenPair(user.ID, user.Name)
-	if err != nil {
-		c.Ctx.StopWithJSON(401, iris.Map{"message": "failed to refresh token"})
-		return
-	}
-	c.Ctx.StatusCode(200)
-	c.Ctx.Header("authorization", string(tokens.AccessToken))
-	c.Ctx.Header("refresh-token", string(tokens.RefreshToken))
-	c.Ctx.JSON(iris.Map{"message": "refresh success: check new tokens in the HTTP header"})
-
-	return
+	middleware.RefreshToken(c.Ctx)
 }
 
 // HashAndSalt : Generate hashed password
