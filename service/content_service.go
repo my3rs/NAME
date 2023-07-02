@@ -5,10 +5,11 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday/v2"
 	"html/template"
 	"log"
+
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday/v2"
 
 	"gorm.io/gorm"
 )
@@ -24,6 +25,7 @@ type ContentService interface {
 	GetFormattedPostByID(id int) model.Content
 
 	GetContentByID(id int) (model.Content, error)
+	GetPureContentByID(id int) model.Content
 
 	GetPageCount() int64
 }
@@ -68,7 +70,21 @@ func (s *contentService) InsertPost(post model.Content) error {
 }
 
 func (s *contentService) DeletePostByIDs(ids []uint) error {
-	result := s.Db.Where("type = ?", model.ContentTypePost).Delete(&model.Content{}, ids)
+	// result := s.Db.Select(clause.Associations).Delete(&model.Content{}, ids)
+	// result := s.Db.Select("Tags").Delete(&model.Content{}, ids)
+	// s.Db.Model(&model.Content{}, ids).Association("Tags").Delete(&model.Tag{}, ids)
+	// result := s.Db.Where("type = ?", model.ContentTypePost).Delete(&model.Content{}, ids)
+	// result := s.Db.Model(&model.Content{}).Select("Tags").Delete(&model.Content{}, ids)
+	// if result.Error != nil {
+	// 	return result.Error
+	// }
+
+	var contents []model.Content
+	s.Db.Where("type = ?", model.ContentTypePost).Find(&contents, ids)
+	for _, content := range contents {
+		s.Db.Model(&content).Association("Tags").Clear()
+	}
+	result := s.Db.Delete(&contents)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -114,6 +130,15 @@ func (s *contentService) GetPostByID(id int) model.Content {
 	}
 
 	return post
+}
+
+func (s *contentService) GetPureContentByID(id int) model.Content {
+	var content model.Content
+	result := s.Db.First(&content, id)
+	if result.Error != nil {
+		return model.Content{}
+	}
+	return content
 }
 
 func (s *contentService) GetFormattedPostByID(id int) model.Content {

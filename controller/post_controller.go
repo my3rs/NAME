@@ -4,9 +4,13 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
+	"log"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/kataras/iris/v12/mvc"
 
 	"github.com/kataras/iris/v12"
 )
@@ -30,6 +34,35 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
+func (c *PostController) BeforeActivation(b mvc.BeforeActivation) {
+	log.Print("before ", b.GetRoutes("GET"))
+}
+
+func (c *PostController) AfterActivation(b mvc.BeforeActivation) {
+	log.Print("after ", b.GetRoutes("GET"))
+}
+
+func replaceContentNonEmptyFields(src, dst *model.Content) {
+	t := reflect.TypeOf(*src)
+	v := reflect.ValueOf(*src)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		// 不可覆盖的字段
+		if field.Name == "ID" || field.Name == "Type" || field.Name == "AuthorId" ||
+			field.Name == "ViewsNum" || field.Name == "Tags" {
+			continue
+		}
+
+		if value.Interface() != reflect.Zero(value.Type()).Interface() {
+			dstField := reflect.ValueOf(dst).Elem().FieldByName(field.Name)
+			dstField.Set(value)
+		}
+	}
+}
+
 func (c *PostController) Get(req model.QueryRequest) model.Response {
 
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
@@ -41,27 +74,27 @@ func (c *PostController) Get(req model.QueryRequest) model.Response {
 	var rsp model.Response
 	var page model.Page
 
-	page.Total = c.Service.GetPostsCount()
+	page.ContentCount = c.Service.GetPostsCount()
 	page.PageIndex = req.PageIndex
 	page.PageSize = req.PageSize
-	page.TotalPage = page.Total/int64(req.PageSize) + 1
+	page.PageCount = page.ContentCount/int64(req.PageSize) + 1
 
-	if int64(req.PageIndex) > page.TotalPage {
+	if int64(req.PageIndex) > page.PageCount {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.Response{Success: false, Message: "pageIndex too large"}
 	}
 
-	if req.PageIndex > 1 {
-		page.Pre = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex-1) + "pageSize=" + strconv.Itoa(req.PageSize)
-	}
-	if int64(req.PageIndex) < page.TotalPage {
-		page.Next = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex+1) + "pageSize=" + strconv.Itoa(req.PageSize)
-	}
+	// if req.PageIndex > 1 {
+	// 	page.Pre = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex-1) + "pageSize=" + strconv.Itoa(req.PageSize)
+	// }
+	// if int64(req.PageIndex) < page.TotalPage {
+	// 	page.Next = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex+1) + "pageSize=" + strconv.Itoa(req.PageSize)
+	// }
 
-	if len(req.Order) == 0 {
-		req.Order = "created_at desc"
-	}
-	page.Order = req.Order
+	// if len(req.Order) == 0 {
+	// 	req.Order = "created_at desc"
+	// }
+	// page.Order = req.Order
 
 	posts := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
 
@@ -108,6 +141,28 @@ func (c *PostController) Post(req model.PostRequest) model.Response {
 
 	c.Ctx.StatusCode(iris.StatusOK)
 	return model.Response{Success: true}
+}
+
+// Patch handles PATCH /api/v1/post/{:id} 更新评论（指定字段）
+func (c *PostController) PatchBy(id uint) model.Response {
+	var req model.Content
+	if err := c.Ctx.ReadJSON(&req); err != nil {
+		c.Ctx.Application().Logger().Error("Failed to read json from PUT post request: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.Response{Success: false, Message: err.Error()}
+	}
+
+	post := c.Service.GetPureContentByID(int(id))
+	if post.ID == 0 {
+		c.Ctx.Application().Logger().Error("Post doesn't exist, id = ", id)
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.Response{Success: false, Message: "Post doesn't exist"}
+	}
+
+	replaceContentNonEmptyFields(&req, &post)
+	c.Service.UpdatePost(post)
+
+	return model.Response{Success: true, Message: "Succeed to update post"}
 }
 
 func (c *PostController) PutBy(id int) model.Response {
