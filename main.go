@@ -17,7 +17,7 @@ func main() {
 
 	app := iris.New()
 	//app.Logger().SetLevel("debug")
-	app.Logger().Info("配置文件位置：", *configFilePath)
+	app.Logger().Info("Config file: ", *configFilePath)
 
 	conf.SetConfigPath(*configFilePath)
 
@@ -31,7 +31,7 @@ func main() {
 	app.Use(logMiddleware)
 	//app.OnErrorCode(iris.StatusUnauthorized, handleUnauthorized)
 
-	// 初始化一些设置
+	// Init some configures 
 	route.InitRoute(app)
 
 	tmpl := iris.HTML("./web/view", ".gohtml")
