@@ -79,6 +79,13 @@ func (c *AuthController) PostRegisterBy(username string) {
 
 }
 
+func trimQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
 // PostLoginBy handles POST: https://localhost/api/v1/auth/login/:username
 func (c *AuthController) PostLoginBy(username string) loginResponse {
 	// Read json from request body
@@ -134,8 +141,8 @@ func (c *AuthController) PostLoginBy(username string) loginResponse {
 	}
 
 	c.Ctx.StatusCode(200)
-	c.Ctx.Header("authorization", string(pair.AccessToken))
-	c.Ctx.Header("refresh-token", string(pair.RefreshToken))
+	c.Ctx.Header("authorization", trimQuotes(string(pair.AccessToken)))
+	c.Ctx.Header("refresh-token", trimQuotes(string(pair.RefreshToken)))
 
 	return loginResponse{
 		Success:           true,
