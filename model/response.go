@@ -15,11 +15,11 @@ type TestResponse struct {
 }
 
 type Page struct {
-	PageSize  int    `json:"pageSize,omitempty"`
-	PageIndex int    `json:"pageIndex,omitempty"`
-	Total     int64  `json:"total,omitempty"`
-	TotalPage int64  `json:"totalPage,omitempty"`
-	Next      string `json:"next,omitempty"`
-	Pre       string `json:"pre,omitempty"`
-	Order     string `json:"orderBy,omitempty"`
+	PageSize     int    `json:"pageSize,omitempty"`
+	PageIndex    int    `json:"pageIndex,omitempty"`
+	ContentCount int64  `json:"total,omitempty"`
+	PageCount    int64  `json:"pageCount,omitempty"`
+	Next         string `json:"next,omitempty"`
+	Pre          string `json:"pre,omitempty"`
+	Order        string `json:"orderBy,omitempty"`
 }
