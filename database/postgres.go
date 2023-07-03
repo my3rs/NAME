@@ -32,7 +32,8 @@ func initDb() (*gorm.DB, error) {
 		}
 
 		// db.AutoMigrate(&model.Content{}, &model.User{}, &model.Tag{})
-		db.AutoMigrate(&model.Attachment{})
+		db.AutoMigrate(&model.Attachment{}, &model.Comment{}, &model.Content{}, &model.User{}, &model.Tag{})
+
 	})
 
 	return db, nil
