@@ -5,9 +5,10 @@ import (
 	"NAME/controller"
 	"NAME/middleware"
 	web "NAME/web/controller"
+	"os"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
-	"os"
 )
 
 func InitRoute(app *iris.Application) {
@@ -32,6 +33,7 @@ func InitRoute(app *iris.Application) {
 		application.Handle(controller.NewAttachmentController())
 	})
 
+	// Everyone can GET from /api/API_VERSION/posts
 	jwtFilter := func(ctx iris.Context) bool {
 		if method := ctx.Method(); method == iris.MethodGet {
 			ctx.Next()
@@ -43,15 +45,17 @@ func InitRoute(app *iris.Application) {
 	posts := app.Party("/api/v1/posts")
 	if conf.Config().Mode == conf.PROD {
 		posts.Use(jwtMiddleware)
-		//posts.Get("/").RemoveHandler()
-		//posts.Get("/").RemoveHandler("middleware.JwtMiddleware.func2")
-		//for _, h := range posts.Get("/", func(context2 iris.Context) {}).Handlers {
-		//	log.Print("xxx ", context.HandlerName(h))
-		//}
-		//log.Printf("xxxx %+v", posts.Get("/", func(context2 iris.Context) {}).Handlers)
 	}
 	mvc.Configure(posts, func(application *mvc.Application) {
 		application.Handle(controller.NewPostController())
+	})
+
+	comments := app.Party("/api/v1/comments")
+	if conf.Config().Mode == conf.PROD {
+		comments.Use(jwtMiddleware)
+	}
+	mvc.Configure(comments, func(application *mvc.Application) {
+		application.Handle(controller.NewCommentController())
 	})
 
 	pages := app.Party("/api/v1/pages")
@@ -81,7 +85,7 @@ func InitRoute(app *iris.Application) {
 
 	tags := app.Party("/api/v1/tags")
 	if conf.Config().Mode == conf.PROD {
-		tags.Use(middleware.JwtMiddleware())
+		tags.Use(jwtMiddleware)
 	}
 	mvc.Configure(tags, func(application *mvc.Application) {
 		application.Handle(controller.NewTagController())
