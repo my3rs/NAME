@@ -70,6 +70,7 @@ func (c *AttachmentController) Post() {
 	// Store files
 	failures := 0
 	message := ""
+	var urls []string
 	for _, file := range files {
 		oldFileName := file.Filename
 		suffix := path.Ext(file.Filename)
@@ -86,6 +87,7 @@ func (c *AttachmentController) Post() {
 		if e := c.AttachmentService.InsertAttachment(attachment); e != nil {
 			message += " failed to insert attachment: " + oldFileName
 		}
+		urls = append(urls, attachment.Path+"/"+attachment.Name)
 
 		_, err := c.Ctx.SaveFormFile(file, destDirectory+file.Filename)
 		if err != nil {
@@ -97,6 +99,7 @@ func (c *AttachmentController) Post() {
 	c.Ctx.JSON(iris.Map{
 		"Success": failures == 0,
 		"Message": message,
+		"URLs":    urls,
 	})
 
 }
