@@ -15,4 +15,6 @@ PASSWORD = "postgres"
 SECRET_KEY = "replace this"
 ACCESS_TOKEN_MAX_AGE = 1
 REFRESH_TOKEN_MAX_AGE = 2
+PRIVATE_KEY="/home/my3rs/name_data/id_rsa"
+PUBLIC_KEY="/home/my3rs/name_data/id_rsa.pub"
 
