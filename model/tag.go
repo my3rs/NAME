@@ -10,7 +10,7 @@ package model
 // }
 
 type Tag struct {
-	ID        uint   `gorm:"primaryKey;autoIncrement;type:int" json:"id"`
+	ID        uint   `gorm:"primaryKey;autoIncrement" json:"id"`
 	No        string `gorm:"unique;index" json:"no"`
 	Text      string `json:"text,omitempty"`
 	Path      string `json:"path,omitempty"`

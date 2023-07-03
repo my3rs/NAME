@@ -1,6 +1,7 @@
 package model
 
 import (
+	"html/template"
 	"time"
 )
 
@@ -21,11 +22,13 @@ const (
 )
 
 type Content struct {
-	ID       uint        `gorm:"primaryKey" json:"id"`
-	Type     ContentType `json:"type"`
-	Title    string      `json:"title"`
-	Abstract string      `json:"abstract"`
-	Text     string      `json:"text"`
+	ID            uint          `gorm:"primaryKey" json:"id"`
+	Type          ContentType   `json:"type"`
+	Title         string        `json:"title"`
+	Abstract      string        `json:"abstract"`
+	Text          string        `json:"text"`
+	TextHTML      template.HTML `json:"textHtml" gorm:"-"`
+	FeaturedImage string        `json:"featuredImage" gorm:"default:null"`
 
 	AuthorId uint `json:"-"`
 	Author   User `json:"author"`
@@ -34,7 +37,7 @@ type Content struct {
 	UpdatedAt    int64         `json:"updatedAt" gorm:"autoUpdateTime:milli"`
 	PublishAt    int64         `json:"publishAt"`
 	Status       ContentStatus `json:"status"`
-	AllowComment bool          `json:"-"`
+	AllowComment bool          `json:"allowComment"`
 	Password     string        `json:"-"`
 
 	Tags []Tag `json:"tags" gorm:"many2many:content_tags"`
