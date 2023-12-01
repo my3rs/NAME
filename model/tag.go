@@ -11,6 +11,7 @@ package model
 
 type Tag struct {
 	ID        uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	ParentID  uint   `json:"parentID"`
 	No        string `gorm:"unique;index" json:"no"`
 	Text      string `json:"text,omitempty"`
 	Path      string `json:"path,omitempty"`
