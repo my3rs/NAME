@@ -13,7 +13,7 @@ type Comment struct {
 	ContentID uint    `json:"-" gorm:"default:null"`
 	Content   Content `json:"-"`
 
-	CreatedAt int `json:"createdAt"`
+	CreatedAt int `json:"createdAt"  gorm:"autoCreateTime:milli"`
 
 	AuthorID   uint   `json:"-" gorm:"default:null"`
 	AuthorName string `json:"authorName" gorm:"default:null"`
@@ -27,4 +27,6 @@ type Comment struct {
 	Status uint   `json:"status"`
 	IP     string `json:"-"`
 	Agent  string `json:"agent"`
+
+	Points uint `json:"points"`
 }
