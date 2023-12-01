@@ -10,8 +10,9 @@ import (
 )
 
 type CommentController struct {
-	Ctx     iris.Context
-	Service service.CommentService
+	Ctx         iris.Context
+	Service     service.CommentService
+	UserService service.UserService
 }
 
 type postCommentRequest struct {
@@ -29,7 +30,7 @@ type postCommentRequest struct {
 	CreatedAt int  `json:"createdAt"`
 }
 
-type postCommnetResponse struct {
+type PostCommnetResponse struct {
 	Success bool            `json:"success,omitempty"`
 	Message string          `json:"message,omitempty"`
 	Data    []model.Comment `json:"data,omitempty"`
@@ -44,7 +45,10 @@ type getCommentsRequest struct {
 }
 
 func NewCommentController() *CommentController {
-	return &CommentController{Service: service.NewCommentService()}
+	return &CommentController{
+		Service:     service.NewCommentService(),
+		UserService: service.GetUserService(),
+	}
 }
 
 func replaceNonEmptyFields(src, dst *model.Comment) {
@@ -67,7 +71,21 @@ func replaceNonEmptyFields(src, dst *model.Comment) {
 	}
 }
 
-func (c *CommentController) Post(req postCommentRequest) postCommnetResponse {
+func checkComment(comment string) error {
+	if comment == "" || len(comment) == 0 {
+		return dict.ErrEmptyContent
+	}
+
+	return nil
+}
+
+func (c *CommentController) Post(req postCommentRequest) PostCommnetResponse {
+	// 检查评论是否合规
+	if checkComment(req.Text) != nil {
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return PostCommnetResponse{Success: false, Message: dict.ErrEmptyContent.Error()}
+	}
+
 	var comment = model.Comment{
 		ID:         req.ID,
 		ContentID:  req.ContentID,
@@ -81,24 +99,46 @@ func (c *CommentController) Post(req postCommentRequest) postCommnetResponse {
 		ParentID:   req.ParentID,
 	}
 
+	// 如果是已登录用户，直接从数据库中获取用户信息
+	if comment.AuthorID != 0 {
+
+		user, err := c.UserService.GetUserByID(int(comment.AuthorID))
+		if err != nil {
+			c.Ctx.Application().Logger().Error("通过ID获取用户失败：", err.Error())
+		}
+
+		comment.AuthorName = user.Name
+		comment.Mail = user.Mail
+		comment.URL = user.Url
+
+		c.Ctx.Application().Logger().Info("评论--用户ID：", comment.AuthorID, " 用户名：", comment.AuthorName)
+	}
+
+	// 获取用户IP和User-Agent
+	c.Ctx.Application().Logger().Info(c.Ctx.GetHeader("User-Agent"))
+	comment.Agent = c.Ctx.GetHeader("User-Agent")
+	comment.IP = c.Ctx.RemoteAddr()
+
+	c.Ctx.Application().Logger().Infof("发表评论：%+v", comment)
+
 	if err := c.Service.InsertCommnet(comment); err != nil {
 		c.Ctx.Application().Logger().Error(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return postCommnetResponse{Success: false, Message: err.Error()}
+		return PostCommnetResponse{Success: false, Message: err.Error()}
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-	return postCommnetResponse{Success: true}
+	return PostCommnetResponse{Success: true}
 }
 
-func (c *CommentController) Get(req getCommentsRequest) postCommnetResponse {
+func (c *CommentController) Get(req getCommentsRequest) PostCommnetResponse {
 	if req.PageIndex <= 0 || req.PageSize <= 0 {
 		c.Ctx.Application().Logger().Error("Failed to get comments: pageIndex or pageSize <= 0")
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return postCommnetResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
+		return PostCommnetResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
 	}
 
-	var rsp postCommnetResponse
+	var rsp PostCommnetResponse
 	var page model.Page
 
 	rsp.Success = true
