@@ -17,7 +17,7 @@ var (
 )
 
 type UserService interface {
-	GetUserById(int) (model.User, error)
+	GetUserByID(int) (model.User, error)
 	GetUserByName(string) (model.User, error)
 	GetUserByMail(string) (model.User, error)
 	GetUsersWithOrder(pageIndex int, pageSize int, order string) ([]model.User, error)
@@ -33,7 +33,7 @@ type userService struct {
 	Db *gorm.DB
 }
 
-func GetUserService() *userService {
+func GetUserService() UserService {
 	once.Do(func() {
 		db, err := database.GetDb()
 		if err != nil {
@@ -45,7 +45,7 @@ func GetUserService() *userService {
 	return service
 }
 
-func (s *userService) GetUserById(id int) (model.User, error) {
+func (s *userService) GetUserByID(id int) (model.User, error) {
 	var user model.User
 
 	if result := s.Db.First(&user, id); result.Error != nil {
