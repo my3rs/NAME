@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -101,16 +100,13 @@ func RefreshToken(ctx iris.Context) {
 
 	verifiedToken, err := verifier.VerifyToken([]byte(refreshToken), jwt.Expected{})
 	if err != nil {
+		ctx.Application().Logger().Error("验证RefreshToken失败：", err)
+		ctx.Application().Logger().Error(refreshToken)
 		ctx.StopWithError(iris.StatusNonAuthoritativeInfo, err)
 		return
 	}
 
-	userID, err := strconv.Atoi(verifiedToken.StandardClaims.Subject)
-	if err != nil {
-		ctx.StopWithError(iris.StatusNonAuthoritativeInfo, err)
-		return
-	}
-	user, err := service.GetUserService().GetUserById(userID)
+	user, err := service.GetUserService().GetUserByName(verifiedToken.StandardClaims.Subject)
 	if err != nil {
 		ctx.StopWithError(iris.StatusNonAuthoritativeInfo, err)
 		return
@@ -123,8 +119,8 @@ func RefreshToken(ctx iris.Context) {
 	}
 
 	ctx.StatusCode(200)
-	ctx.Header("authorization", string(pair.AccessToken))
-	ctx.Header("refresh-token", string(pair.RefreshToken))
+	ctx.Header("authorization", trimQuotes(string(pair.AccessToken)))
+	ctx.Header("refresh-token", trimQuotes(string(pair.RefreshToken)))
 	ctx.JSON(iris.Map{"message": "refresh success: check new tokens in the HTTP header"})
 
 	ctx.Next()
@@ -136,6 +132,13 @@ func getRefreshToken(ctx iris.Context) string {
 
 func getAccessToken(ctx iris.Context) string {
 	return ctx.GetHeader("Authorization")
+}
+
+func trimQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 // CheckTokenFormat check token's length and prefix
