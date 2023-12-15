@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/kataras/iris/v12"
@@ -9,7 +10,7 @@ import (
 	"sync"
 )
 
-var configFile = ""
+var configFile = flag.String("c", "./name.conf", "配置文件路径")
 
 const MaxBodySize = 20 * iris.MB
 
@@ -83,28 +84,28 @@ func (c *tomlConfig) Print() {
 
 // Config 单例模式
 func Config() *tomlConfig {
-	once.Do(func() {
-		if _, err := toml.DecodeFile(configFile, &conf); err != nil {
-			panic(err)
-		}
-
-		info, err := os.Stat(conf.JWT.PrivateKey)
-		if err != nil {
-			log.Println("PrivateKey: ", conf.JWT.PrivateKey, info.IsDir())
-			panic(err)
-		}
-		info, err = os.Stat(conf.JWT.PublicKey)
-		if err != nil {
-			log.Println("PublicKey: ", conf.JWT.PrivateKey, info)
-			panic(err)
-		}
-
-		conf.Print()
-
-	})
 	return conf
 }
 
-func SetConfigPath(path string) {
-	configFile = path
+func init() {
+	flag.Parse()
+
+	log.Println("初始化，Package config")
+	if _, err := toml.DecodeFile(*configFile, &conf); err != nil {
+		log.Panic("初始化配置文件失败 文件名：", configFile, "Error: ", err)
+		//panic(err)
+	}
+
+	info, err := os.Stat(conf.JWT.PrivateKey)
+	if err != nil {
+		log.Println("PrivateKey: ", conf.JWT.PrivateKey, info.IsDir())
+		panic(err)
+	}
+	info, err = os.Stat(conf.JWT.PublicKey)
+	if err != nil {
+		log.Println("PublicKey: ", conf.JWT.PrivateKey, info)
+		panic(err)
+	}
+
+	conf.Print()
 }
