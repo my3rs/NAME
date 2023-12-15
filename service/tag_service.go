@@ -4,8 +4,6 @@ import (
 	"NAME/database"
 	"NAME/dict"
 	"NAME/model"
-	"log"
-
 	"gorm.io/gorm"
 )
 
@@ -31,9 +29,12 @@ type tagService struct {
 func NewTagService() TagService {
 	db, err := database.GetDb()
 	if err != nil {
-		log.Panic(err.Error())
+		panic(err.Error())
 	}
-	return &tagService{DB: db}
+
+	service := &tagService{DB: db}
+
+	return service
 }
 
 func (s *tagService) GetTagByID(id uint) (model.Tag, error) {
