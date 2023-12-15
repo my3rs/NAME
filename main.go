@@ -3,7 +3,7 @@ package main
 import (
 	"NAME/conf"
 	"NAME/route"
-	"flag"
+	"log"
 	"strconv"
 
 	"github.com/kataras/iris/v12"
@@ -30,12 +30,9 @@ func main() {
 	app.Use(logMiddleware)
 	//app.OnErrorCode(iris.StatusUnauthorized, handleUnauthorized)
 
-	// Init some configures 
+	// Init some configures
 	route.InitRoute(app)
 
-	tmpl := iris.HTML("./web/view", ".gohtml")
-	tmpl.Reload(true)
-	app.RegisterView(tmpl)
 	app.HandleDir("/assets", "./web/assets")
 	app.HandleDir("/uploads", conf.Config().DataPath+"/uploads")
 
