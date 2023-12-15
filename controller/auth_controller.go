@@ -39,10 +39,6 @@ type AuthController struct {
 	UserService service.UserService
 }
 
-func NewAuthController() *AuthController {
-	return &AuthController{UserService: service.GetUserService()}
-}
-
 // PostRegisterBy handles POST: https://localhost/api/v1/auth/register/:username
 func (c *AuthController) PostRegisterBy(username string) {
 	// Read json from request body

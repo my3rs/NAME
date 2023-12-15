@@ -25,6 +25,7 @@ func NewAttachmentService() AttachmentService {
 }
 
 func (u *attachmentService) InsertAttachment(attachment model.Attachment) error {
+	log.Printf("InsertAttachment: %+v\n", attachment)
 	result := u.DB.Create(&attachment)
 
 	return result.Error

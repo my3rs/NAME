@@ -14,10 +14,6 @@ type UserController struct {
 	UserService service.UserService
 }
 
-func NewUserController() *UserController {
-	return &UserController{UserService: service.GetUserService()}
-}
-
 func (c *UserController) Get(req model.QueryRequest) model.TestResponse {
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
 		c.Ctx.Application().Logger().Info("request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)

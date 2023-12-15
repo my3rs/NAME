@@ -10,9 +10,9 @@ import (
 )
 
 type CommentController struct {
-	Ctx         iris.Context
-	Service     service.CommentService
-	UserService service.UserService
+	Ctx            iris.Context
+	CommentService service.CommentService
+	UserService    service.UserService
 }
 
 type postCommentRequest struct {
@@ -30,7 +30,7 @@ type postCommentRequest struct {
 	CreatedAt int  `json:"createdAt"`
 }
 
-type PostCommnetResponse struct {
+type PostCommentResponse struct {
 	Success bool            `json:"success,omitempty"`
 	Message string          `json:"message,omitempty"`
 	Data    []model.Comment `json:"data,omitempty"`
@@ -42,13 +42,6 @@ type getCommentsRequest struct {
 	PageIndex int    `url:"pageIndex" json:"pageIndex"`
 	Order     string `url:"orderBy" json:"orderBy,omitempty"`
 	ContentID uint   `url:"contentID" json:"contentID"`
-}
-
-func NewCommentController() *CommentController {
-	return &CommentController{
-		Service:     service.NewCommentService(),
-		UserService: service.GetUserService(),
-	}
 }
 
 func replaceNonEmptyFields(src, dst *model.Comment) {
@@ -79,11 +72,11 @@ func checkComment(comment string) error {
 	return nil
 }
 
-func (c *CommentController) Post(req postCommentRequest) PostCommnetResponse {
+func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 	// 检查评论是否合规
 	if checkComment(req.Text) != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommnetResponse{Success: false, Message: dict.ErrEmptyContent.Error()}
+		return PostCommentResponse{Success: false, Message: dict.ErrEmptyContent.Error()}
 	}
 
 	var comment = model.Comment{
@@ -121,28 +114,28 @@ func (c *CommentController) Post(req postCommentRequest) PostCommnetResponse {
 
 	c.Ctx.Application().Logger().Infof("发表评论：%+v", comment)
 
-	if err := c.Service.InsertCommnet(comment); err != nil {
+	if err := c.CommentService.InsertCommnet(comment); err != nil {
 		c.Ctx.Application().Logger().Error(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommnetResponse{Success: false, Message: err.Error()}
+		return PostCommentResponse{Success: false, Message: err.Error()}
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-	return PostCommnetResponse{Success: true}
+	return PostCommentResponse{Success: true}
 }
 
-func (c *CommentController) Get(req getCommentsRequest) PostCommnetResponse {
+func (c *CommentController) Get(req getCommentsRequest) PostCommentResponse {
 	if req.PageIndex <= 0 || req.PageSize <= 0 {
 		c.Ctx.Application().Logger().Error("Failed to get comments: pageIndex or pageSize <= 0")
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommnetResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
+		return PostCommentResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
 	}
 
-	var rsp PostCommnetResponse
+	var rsp PostCommentResponse
 	var page model.Page
 
 	rsp.Success = true
-	rsp.Data = c.Service.GetComments(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
+	rsp.Data = c.CommentService.GetComments(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
 	page.PageIndex = req.PageIndex
 	page.PageSize = len(rsp.Data)
 	page.Order = req.Order
@@ -173,14 +166,14 @@ func (c *CommentController) PutBy(id uint) model.Response {
 		Agent:      req.Agent,
 		ParentID:   req.ParentID,
 	}
-	if err := c.Service.UpdateComment(comment); err != nil {
+	if err := c.CommentService.UpdateComment(comment); err != nil {
 		return model.Response{Success: false, Message: err.Error()}
 	}
 
 	return model.Response{Success: true, Message: "Succeed to update comment"}
 }
 
-// Patch handles PATCH /api/v1/comments/{:id} 更新评论（指定字段）
+// PatchBy handles PATCH /api/v1/comments/{:id} 更新评论（指定字段）
 func (c *CommentController) PatchBy(id uint) model.Response {
 	var req model.Comment
 	if err := c.Ctx.ReadJSON(&req); err != nil {
@@ -189,7 +182,7 @@ func (c *CommentController) PatchBy(id uint) model.Response {
 		return model.Response{Success: false, Message: err.Error()}
 	}
 
-	comment := c.Service.GetCommentByID(int(id))
+	comment := c.CommentService.GetCommentByID(int(id))
 	if comment.ID == 0 {
 		c.Ctx.Application().Logger().Error("Comment doesn't exist, id = ", id)
 		c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -197,7 +190,7 @@ func (c *CommentController) PatchBy(id uint) model.Response {
 	}
 
 	replaceNonEmptyFields(&req, &comment)
-	c.Service.UpdateComment(comment)
+	c.CommentService.UpdateComment(comment)
 
 	return model.Response{Success: true, Message: "Succeed to update comment"}
 }

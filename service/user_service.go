@@ -7,13 +7,6 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"log"
-	"sync"
-)
-
-var (
-	once    sync.Once
-	service *userService
 )
 
 type UserService interface {
@@ -33,16 +26,15 @@ type userService struct {
 	Db *gorm.DB
 }
 
-func GetUserService() UserService {
-	once.Do(func() {
-		db, err := database.GetDb()
-		if err != nil {
-			log.Panic(err.Error())
-		}
-		service = &userService{Db: db}
-	})
+func NewUserService() UserService {
+	db, err := database.GetDb()
+	if err != nil {
+		panic(err.Error())
+	}
 
-	return service
+	return &userService{
+		Db: db,
+	}
 }
 
 func (s *userService) GetUserByID(id int) (model.User, error) {

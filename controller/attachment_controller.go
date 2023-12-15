@@ -5,6 +5,7 @@ import (
 	"NAME/model"
 	"NAME/service"
 	"github.com/kataras/iris/v12"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -14,12 +15,6 @@ import (
 type AttachmentController struct {
 	Ctx               iris.Context
 	AttachmentService service.AttachmentService
-}
-
-func NewAttachmentController() *AttachmentController {
-	return &AttachmentController{
-		AttachmentService: service.GetAttachmentService(),
-	}
 }
 
 func (c *AttachmentController) Post() {
@@ -83,7 +78,9 @@ func (c *AttachmentController) Post() {
 
 	c.Ctx.Application().Logger().Infof("上传附件 - 插入数据库：%+v", attachment)
 
-	c.AttachmentService.InsertAttachment(attachment)
+	if c.AttachmentService == nil {
+		log.Panic("AttachmentService is nil")
+	}
 
 	if e := c.AttachmentService.InsertAttachment(attachment); e != nil {
 		c.Ctx.JSON(iris.Map{
