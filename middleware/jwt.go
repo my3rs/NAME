@@ -106,7 +106,7 @@ func RefreshToken(ctx iris.Context) {
 		return
 	}
 
-	user, err := service.GetUserService().GetUserByName(verifiedToken.StandardClaims.Subject)
+	user, err := service.NewUserService().GetUserByName(verifiedToken.StandardClaims.Subject)
 	if err != nil {
 		ctx.StopWithError(iris.StatusNonAuthoritativeInfo, err)
 		return
