@@ -5,11 +5,9 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
-	"html/template"
-	"log"
-
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday/v2"
+	"html/template"
 
 	"gorm.io/gorm"
 )
@@ -37,7 +35,7 @@ type contentService struct {
 func NewContentService() ContentService {
 	db, err := database.GetDb()
 	if err != nil {
-		log.Panic(err.Error())
+		panic(err.Error())
 	}
 	return &contentService{Db: db}
 }

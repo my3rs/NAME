@@ -20,10 +20,6 @@ type PostController struct {
 	Service service.ContentService
 }
 
-func NewPostController() *PostController {
-	return &PostController{Service: service.NewContentService()}
-}
-
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func RandStringRunes(n int) string {

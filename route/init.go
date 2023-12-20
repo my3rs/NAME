@@ -57,7 +57,11 @@ func InitRoute(app *iris.Application) {
 		posts.Use(jwtMiddleware)
 	}
 	mvc.Configure(posts, func(application *mvc.Application) {
-		application.Handle(controller.NewPostController())
+		application.Register(
+			database.GetDb,
+			service.NewContentService,
+		)
+		application.Handle(new(controller.PostController))
 	})
 
 	comments := app.Party("/api/v1/comments")
