@@ -17,6 +17,8 @@ var (
 	ErrUserAlreadyExists    = errors.New("user already exists")
 	ErrUserNotExists        = errors.New("user doesn't exists")
 	ErrWrongPassword        = errors.New("wrong password")
+	ErrEmptyContent         = errors.New("empty content")
+	ErrNotFound             = errors.New("item not found")
 )
 
 func (d Dict) String() string {

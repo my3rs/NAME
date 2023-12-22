@@ -2,6 +2,8 @@ package database
 
 import (
 	"NAME/conf"
+	"NAME/model"
+	"log"
 	"strings"
 	"sync"
 
@@ -30,15 +32,22 @@ func initPostgres() {
 		panic("Failed to connect database")
 	}
 
-	// db.AutoMigrate(&model.Content{}, &model.User{}, &model.Tag{})
-	//db.AutoMigrate(&model.Attachment{}, &model.Comment{}, &model.Content{}, &model.User{}, &model.Tag{})
-
+	err = db.AutoMigrate(
+		&model.Attachment{},
+		&model.Comment{},
+		&model.Content{},
+		&model.User{}, &model.Tag{},
+		&model.Setting{},
+	)
+	if err != nil {
+		log.Panic("数据库迁移失败：", err)
+	}
 }
 
-func GetDb() (*gorm.DB, error) {
+func GetDB() *gorm.DB {
 	if db == nil {
 		panic("数据库连接为 nil")
 	}
 
-	return db, nil
+	return db
 }
