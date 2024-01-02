@@ -5,6 +5,7 @@ import (
 	"NAME/controller"
 	"NAME/database"
 	"NAME/middleware"
+	"NAME/model"
 	"NAME/service"
 
 	//web "NAME/web/controller"
@@ -32,6 +33,7 @@ func InitRoute(app *iris.Application) {
 		app.Handle(new(controller.AuthController))
 	})
 
+	// 附件
 	attachments := app.Party("/api/v1/attachments")
 	if conf.Config().Mode == conf.PROD {
 		attachments.Use(middleware.JwtMiddleware())
@@ -86,6 +88,7 @@ func InitRoute(app *iris.Application) {
 		application.Handle(new(controller.PageController))
 	})
 
+	// 用户
 	users := app.Party("/api/v1/users")
 	if conf.Config().Mode == conf.PROD {
 		users.Use(middleware.JwtMiddleware())
@@ -99,13 +102,26 @@ func InitRoute(app *iris.Application) {
 		application.Handle(new(controller.UserController))
 	})
 
+	// 设置
+	settings := app.Party("/api/v1/settings")
+	if env, found := model.GetSettingsItem("environment"); found && env.Value == model.EnvironmentProd {
+		settings.Use(middleware.JwtMiddleware())
+	}
+	mvc.Configure(settings, func(app *mvc.Application) {
+		app.Register(
+			database.GetDB,
+		)
+		app.Handle(new(controller.SettingController))
+	})
+
+	// 标签
 	tags := app.Party("/api/v1/tags")
 	if conf.Config().Mode == conf.PROD {
 		tags.Use(jwtMiddleware)
 	}
 	mvc.Configure(tags, func(app *mvc.Application) {
 		app.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewTagService,
 		)
 
