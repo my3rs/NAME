@@ -4,7 +4,6 @@ import (
 	"NAME/model"
 	"NAME/service"
 	"github.com/kataras/iris/v12"
-	"log"
 )
 
 type getTagsRequest struct {
@@ -23,37 +22,32 @@ type TagController struct {
 	Service service.TagService
 }
 
-type GetTagsResponse struct {
-	Success bool        `json:"success"`
-	Data    []model.Tag `json:"data"`
-	Meta    interface{} `json:"meta,omitempty"`
-}
-
-func (c *TagController) Get(request getTagsRequest) GetTagsResponse {
-	var tags []model.Tag
-
-	if c.Service == nil {
-		log.Printf("tagController addr: %p\n", c)
-		log.Panic("c.Service is nil")
+func (c *TagController) Get(request getTagsRequest) {
+	var meta iris.Map
+	if request.Meta != "" {
+		meta = c.Service.GetMetadata()
 	}
 
 	if request.Path != "" {
-		tags = c.Service.GetAllTagsWithPath()
+		tags := c.Service.GetAllTagsWithPath()
+
+		c.Ctx.StatusCode(iris.StatusOK)
+		c.Ctx.JSON(iris.Map{
+			"success": true,
+			"data":    tags,
+			"meta":    meta,
+		})
+
 	} else {
-		tags = c.Service.GetAllTags()
+		tags := c.Service.GetAllTags()
+		c.Ctx.StatusCode(iris.StatusOK)
+		c.Ctx.JSON(iris.Map{
+			"success": true,
+			"data":    tags,
+		})
 	}
 
-	var rsp GetTagsResponse
-	rsp.Success = true
-	rsp.Data = tags
-
-	if request.Meta != "" {
-		meta := c.Service.GetMetadata()
-		rsp.Meta = meta
-	}
-
-	c.Ctx.StatusCode(iris.StatusOK)
-	return rsp
+	return
 }
 
 func (c *TagController) Post(req newTagRequest) {

@@ -16,8 +16,9 @@ import (
 )
 
 type PostController struct {
-	Ctx     iris.Context
-	Service service.ContentService
+	Ctx        iris.Context
+	Service    service.ContentService
+	TagService service.TagService
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -80,17 +81,10 @@ func (c *PostController) Get(req model.QueryRequest) model.Response {
 		return model.Response{Success: false, Message: "pageIndex too large"}
 	}
 
-	// if req.PageIndex > 1 {
-	// 	page.Pre = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex-1) + "pageSize=" + strconv.Itoa(req.PageSize)
-	// }
-	// if int64(req.PageIndex) < page.TotalPage {
-	// 	page.Next = "http://localhost:8000/api/v1/posts&pageIndex=" + strconv.Itoa(req.PageIndex+1) + "pageSize=" + strconv.Itoa(req.PageSize)
-	// }
-
-	// if len(req.Order) == 0 {
-	// 	req.Order = "created_at desc"
-	// }
-	// page.Order = req.Order
+	if len(req.Order) == 0 {
+		req.Order = "created_at desc"
+	}
+	page.Order = req.Order
 
 	posts := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
 
@@ -107,6 +101,22 @@ func (c *PostController) GetBy(id int) model.Response {
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.Response{Success: false, Message: err.Error()}
+	}
+
+	readablePath, err := strconv.ParseBool(c.Ctx.URLParam("readablePath"))
+	if err != nil {
+		readablePath = false
+	}
+
+	if readablePath {
+		debug, found := model.GetSettingsItem("environment")
+		if debug.Value == model.EnvironmentDev || !found {
+			c.Ctx.Application().Logger().Info("查找标签的可读化路径")
+		}
+
+		for i, tag := range post.Tags {
+			post.Tags[i].Text = c.TagService.GetTagReadablePath(tag.ID)
+		}
 	}
 
 	return model.Response{

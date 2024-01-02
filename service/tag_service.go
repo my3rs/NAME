@@ -8,11 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-const sqlGetTagsWithPath = `SELECT tag1.id,tag1.no,tag1.parent_id, tag1.path, array_to_string(array_agg(tag2.text ORDER BY tag2.path), ' / ') As text
+const sqlGetTagsWithPath = `
+SELECT tag1.id,tag1.no,tag1.parent_id,tag1.text, tag1.path, array_to_string(array_agg(tag2.text ORDER BY tag2.path), ' / ') As readable_path
 FROM public.tags As tag1 
 INNER JOIN public.tags As tag2 ON (tag2.path @> tag1.path)
 GROUP BY tag1.id, tag1.path, tag1.text
-ORDER BY text;
+ORDER BY readable_path;
 `
 
 const sqlGetTagByIDWithReadablePath = `SELECT 
@@ -30,7 +31,7 @@ GROUP BY
 type TagService interface {
 	GetTagByID(id uint) (model.Tag, error)
 	GetAllTags() []model.Tag
-	GetAllTagsWithPath() []model.Tag
+	GetAllTagsWithPath() []model.TagExt
 	GetTagsWithOrder(pageIndex int, pageSize int, order string) ([]model.Tag, error)
 	GetTagsCount() int64
 
@@ -74,8 +75,8 @@ func (s *tagService) GetAllTags() []model.Tag {
 	return tags
 }
 
-func (s *tagService) GetAllTagsWithPath() []model.Tag {
-	var tags []model.Tag
+func (s *tagService) GetAllTagsWithPath() []model.TagExt {
+	var tags []model.TagExt
 	s.DB.Raw(sqlGetTagsWithPath).Scan(&tags)
 
 	return tags

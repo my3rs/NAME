@@ -8,7 +8,9 @@ type Tag struct {
 	Path      string `gorm:"type:ltree" json:"path,omitempty"`
 	CreatedAt int64  `json:"createdAt,omitempty" gorm:"autoCreateTime:milli"`
 	UpdatedAt int64  `json:"updatedAt,omitempty" gorm:"autoUpdateTime:milli"`
+}
 
-	// 以下是别名字段
-	ReadablePath string `gorm:"-" json:"readablePath,omitempty"`
+type TagExt struct {
+	Tag
+	ReadablePath string `gorm:"->" json:"readablePath"`
 }
