@@ -16,10 +16,7 @@ type attachmentService struct {
 }
 
 func NewAttachmentService() AttachmentService {
-	db, err := database.GetDb()
-	if err != nil {
-		log.Panic(err.Error())
-	}
+	db := database.GetDB()
 
 	return &attachmentService{DB: db}
 }

@@ -52,7 +52,7 @@ func (c *AttachmentController) Post() {
 
 	// 保存文件
 	today := time.Now().Format("2006-01")
-	dest := conf.Config().DataPath + "/uploads/" + today + "/"
+	dest := conf.Config().DataPath + "/uploads/" + today
 
 	os.Mkdir(dest, 0700)
 	_, err = c.Ctx.SaveFormFile(fileHeader, dest+fileHeader.Filename)

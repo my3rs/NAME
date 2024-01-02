@@ -27,10 +27,7 @@ type userService struct {
 }
 
 func NewUserService() UserService {
-	db, err := database.GetDb()
-	if err != nil {
-		panic(err.Error())
-	}
+	db := database.GetDB()
 
 	return &userService{
 		Db: db,

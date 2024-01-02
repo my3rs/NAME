@@ -22,10 +22,11 @@ func InitRoute(app *iris.Application) {
 		app.Logger().Info("Failed to create data folder: ", err)
 	}
 
+	// 认证
 	apiAuth := app.Party("/api/v1/auth")
 	mvc.Configure(apiAuth, func(app *mvc.Application) {
 		app.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewUserService,
 		)
 		app.Handle(new(controller.AuthController))
@@ -37,7 +38,7 @@ func InitRoute(app *iris.Application) {
 	}
 	mvc.Configure(attachments, func(app *mvc.Application) {
 		app.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewAttachmentService,
 		)
 		app.Handle(new(controller.AttachmentController))
@@ -58,8 +59,9 @@ func InitRoute(app *iris.Application) {
 	}
 	mvc.Configure(posts, func(application *mvc.Application) {
 		application.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewContentService,
+			service.NewTagService,
 		)
 		application.Handle(new(controller.PostController))
 	})
@@ -70,7 +72,7 @@ func InitRoute(app *iris.Application) {
 	//}
 	mvc.Configure(comments, func(application *mvc.Application) {
 		application.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewCommentService,
 		)
 		application.Handle(new(controller.CommentController))
@@ -91,7 +93,7 @@ func InitRoute(app *iris.Application) {
 	}
 	mvc.Configure(users, func(application *mvc.Application) {
 		application.Register(
-			database.GetDb,
+			database.GetDB,
 			service.NewUserService,
 		)
 		application.Handle(new(controller.UserController))

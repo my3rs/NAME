@@ -5,8 +5,6 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
-	"log"
-
 	"gorm.io/gorm"
 )
 
@@ -29,10 +27,7 @@ WHERE path <@ ARRAY(
 `
 
 func NewCommentService() CommentService {
-	db, err := database.GetDb()
-	if err != nil {
-		log.Panic(err.Error())
-	}
+	db := database.GetDB()
 
 	return &commentService{DB: db}
 }

@@ -36,11 +36,12 @@ func initPostgres() {
 		&model.Attachment{},
 		&model.Comment{},
 		&model.Content{},
-		&model.User{}, &model.Tag{},
+		&model.User{},
+		&model.Tag{},
 		&model.Setting{},
 	)
 	if err != nil {
-		log.Panic("数据库迁移失败：", err)
+		log.Println("数据库迁移失败：", err)
 	}
 }
 

@@ -33,10 +33,8 @@ type contentService struct {
 }
 
 func NewContentService() ContentService {
-	db, err := database.GetDb()
-	if err != nil {
-		panic(err.Error())
-	}
+	db := database.GetDB()
+
 	return &contentService{Db: db}
 }
 

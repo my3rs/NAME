@@ -10,7 +10,9 @@ import (
 	"sync"
 )
 
-var configFile = flag.String("c", "./name.conf", "配置文件路径")
+var (
+	configFile = flag.String("c", "./name.conf", "配置文件路径")
+)
 
 const MaxBodySize = 20 * iris.MB
 
