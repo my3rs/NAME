@@ -9,8 +9,9 @@ import (
 )
 
 type CommentService interface {
-	InsertCommnet(comment model.Comment) error
-	GetComments(contentID int, pageIndex int, pageSize int, order string) []model.Comment
+	InsertComment(comment model.Comment) error
+	GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment
+	GetComments(pageIndex int, pageSize int, order string) []model.Comment
 	GetCommentByID(id int) model.Comment
 	UpdateComment(comment model.Comment) error
 }
@@ -32,7 +33,7 @@ func NewCommentService() CommentService {
 	return &commentService{DB: db}
 }
 
-func (s *commentService) InsertCommnet(comment model.Comment) error {
+func (s *commentService) InsertComment(comment model.Comment) error {
 	if result := s.DB.Create(&comment); result.Error != nil {
 		return result.Error
 	}
@@ -40,11 +41,19 @@ func (s *commentService) InsertCommnet(comment model.Comment) error {
 	return nil
 }
 
-func (s *commentService) GetComments(contentID int, pageIndex int, pageSize int, order string) []model.Comment {
+func (s *commentService) GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment {
 	var results []model.Comment
 	// log.Print(s.DB.Raw(queryCommentByContentID, contentID, model.CommentStatus_Approved, pageSize, pageIndex*pageSize).Statement.SQL.String(), s.DB.Raw(queryCommentByContentID, contentID, model.CommentStatus_Approved, pageSize, pageIndex*pageSize).Statement.Vars)
 
 	s.DB.Raw(queryCommentByContentID, contentID, model.CommentStatus_Approved, pageSize, pageIndex*pageSize).Scan(&results)
+
+	return results
+}
+
+func (s *commentService) GetComments(pageIndex int, pageSize int, order string) []model.Comment {
+	var results []model.Comment
+
+	s.DB.Model(&model.Comment{}).Offset(pageIndex * pageSize).Limit(pageSize).Order(order).Find(&results)
 
 	return results
 }

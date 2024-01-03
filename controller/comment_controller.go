@@ -114,7 +114,7 @@ func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 
 	c.Ctx.Application().Logger().Infof("发表评论：%+v", comment)
 
-	if err := c.CommentService.InsertCommnet(comment); err != nil {
+	if err := c.CommentService.InsertComment(comment); err != nil {
 		c.Ctx.Application().Logger().Error(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return PostCommentResponse{Success: false, Message: err.Error()}
@@ -124,28 +124,57 @@ func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 	return PostCommentResponse{Success: true}
 }
 
-func (c *CommentController) Get(req getCommentsRequest) PostCommentResponse {
+func (c *CommentController) Get(req getCommentsRequest) {
+	// 页码参数检查
 	if req.PageIndex <= 0 || req.PageSize <= 0 {
 		c.Ctx.Application().Logger().Error("Failed to get comments: pageIndex or pageSize <= 0")
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommentResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
+		c.Ctx.JSON(iris.Map{
+			"success": false,
+			"message": dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex",
+		})
+
+		return
 	}
 
-	var rsp PostCommentResponse
+	// 指定内容ID时，获取该内容下的评论
+	if req.ContentID != 0 {
+		data := c.CommentService.GetCommentsByContentID(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
+		var page model.Page
+		page.PageIndex = req.PageIndex
+		page.PageSize = len(data)
+		page.Order = req.Order
+
+		c.Ctx.StatusCode(iris.StatusOK)
+		c.Ctx.JSON(iris.Map{
+			"success": true,
+			"data":    data,
+			"page":    &page,
+		})
+
+		return
+
+	}
+
+	// 获取所有评论
+	data := c.CommentService.GetComments(req.PageIndex-1, req.PageSize, req.Order)
 	var page model.Page
 
-	rsp.Success = true
-	rsp.Data = c.CommentService.GetComments(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
 	page.PageIndex = req.PageIndex
-	page.PageSize = len(rsp.Data)
+	page.PageSize = len(data)
 	page.Order = req.Order
 
-	rsp.Page = &page
+	c.Ctx.StatusCode(iris.StatusOK)
+	c.Ctx.JSON(iris.Map{
+		"success": true,
+		"data":    data,
+		"page":    &page,
+	})
 
-	return rsp
+	return
 }
 
-// Put handles PUT /api/v1/comments/{:id} 更新评论（完整）
+// PutBy Put handles PUT /api/v1/comments/{:id} 更新评论（完整）
 func (c *CommentController) PutBy(id uint) model.Response {
 	var req postCommentRequest
 	if err := c.Ctx.ReadJSON(&req); err != nil {
