@@ -9,12 +9,19 @@ import (
 )
 
 type CommentService interface {
+	// 增
 	InsertComment(comment model.Comment) error
-	GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment
-	GetComments(pageIndex int, pageSize int, order string) []model.Comment
 
+	// 删
+	DeleteComment(id uint) error
+
+	// 查
+	GetComments(pageIndex int, pageSize int, order string) []model.Comment
 	GetCommentsCount(contentID int64) int64
 	GetCommentByID(id int) model.Comment
+	GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment
+
+	// 改
 	UpdateComment(comment model.Comment) error
 }
 
@@ -92,4 +99,13 @@ func (s *commentService) GetCommentByID(id int) model.Comment {
 		return model.Comment{}
 	}
 	return comment
+}
+
+func (s *commentService) DeleteComment(id uint) error {
+	result := s.DB.Delete(&model.Comment{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

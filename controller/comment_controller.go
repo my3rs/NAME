@@ -225,3 +225,12 @@ func (c *CommentController) PatchBy(id uint) model.Response {
 
 	return model.Response{Success: true, Message: "Succeed to update comment"}
 }
+
+// DeleteBy handles DELETE /api/v1/comments/{:id} 删除评论
+func (c *CommentController) DeleteBy(id uint) model.Response {
+	if err := c.CommentService.DeleteComment(id); err != nil {
+		return model.Response{Success: false, Message: err.Error()}
+	}
+
+	return model.Response{Success: true, Message: "Succeed to delete comment"}
+}
