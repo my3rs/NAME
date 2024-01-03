@@ -10,8 +10,9 @@ const (
 type Comment struct {
 	ID uint `json:"id" gorm:"primaryKey"`
 
+	// belongs to 关系
 	ContentID uint    `json:"-" gorm:"default:null"`
-	Content   Content `json:"-"`
+	Content   Content `json:"-" gorm:"default:null,OnDelete:CASCADE"`
 
 	CreatedAt int `json:"createdAt"  gorm:"autoCreateTime:milli"`
 
@@ -24,7 +25,7 @@ type Comment struct {
 	Mail   string `json:"mail"`
 	URL    string `json:"url"`
 	Text   string `json:"text"`
-	Status uint   `json:"status"`
+	Status uint   `json:"status" gorm:"default:1"` // 默认值为 1，即等待审核
 	IP     string `json:"-"`
 	Agent  string `json:"agent"`
 

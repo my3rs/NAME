@@ -12,6 +12,8 @@ type CommentService interface {
 	InsertComment(comment model.Comment) error
 	GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment
 	GetComments(pageIndex int, pageSize int, order string) []model.Comment
+
+	GetCommentsCount(contentID int64) int64
 	GetCommentByID(id int) model.Comment
 	UpdateComment(comment model.Comment) error
 }
@@ -56,6 +58,21 @@ func (s *commentService) GetComments(pageIndex int, pageSize int, order string) 
 	s.DB.Model(&model.Comment{}).Offset(pageIndex * pageSize).Limit(pageSize).Order(order).Find(&results)
 
 	return results
+}
+
+// GetCommentsCount 获取评论总数
+// - contentID 为 0 时，获取所有评论总数
+// - contentID 不为 0 时，获取指定内容的评论总数
+func (s *commentService) GetCommentsCount(contentID int64) int64 {
+	var count int64
+
+	if contentID != 0 {
+		s.DB.Model(&model.Comment{}).Where("content_id = ?", contentID).Count(&count)
+	} else {
+		s.DB.Model(&model.Comment{}).Count(&count)
+	}
+
+	return count
 }
 
 func (s *commentService) UpdateComment(comment model.Comment) error {

@@ -144,12 +144,13 @@ func (c *CommentController) Get(req getCommentsRequest) {
 		page.PageIndex = req.PageIndex
 		page.PageSize = len(data)
 		page.Order = req.Order
+		page.ContentCount = c.CommentService.GetCommentsCount(int64(req.ContentID))
 
 		c.Ctx.StatusCode(iris.StatusOK)
 		c.Ctx.JSON(iris.Map{
-			"success": true,
-			"data":    data,
-			"page":    &page,
+			"success":    true,
+			"data":       data,
+			"pagination": &page,
 		})
 
 		return
@@ -163,12 +164,13 @@ func (c *CommentController) Get(req getCommentsRequest) {
 	page.PageIndex = req.PageIndex
 	page.PageSize = len(data)
 	page.Order = req.Order
+	page.ContentCount = c.CommentService.GetCommentsCount(0)
 
 	c.Ctx.StatusCode(iris.StatusOK)
 	c.Ctx.JSON(iris.Map{
-		"success": true,
-		"data":    data,
-		"page":    &page,
+		"success":    true,
+		"data":       data,
+		"pagination": &page,
 	})
 
 	return
