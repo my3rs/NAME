@@ -68,10 +68,12 @@ func InitRoute(app *iris.Application) {
 		application.Handle(new(controller.PostController))
 	})
 
+	// 评论
 	comments := app.Party("/api/v1/comments")
 	//if conf.Config().Mode == conf.PROD {
 	//	comments.Use(jwtMiddleware)
 	//}
+	comments.Use(jwtMiddleware)
 	mvc.Configure(comments, func(application *mvc.Application) {
 		application.Register(
 			database.GetDB,
