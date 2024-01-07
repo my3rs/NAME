@@ -29,6 +29,7 @@ GROUP BY
 `
 
 type TagService interface {
+	// 查
 	GetTagByID(id uint) (model.Tag, error)
 	GetAllTags() []model.Tag
 	GetAllTagsWithPath() []model.TagExt
@@ -41,7 +42,11 @@ type TagService interface {
 	// GetMetadata 查看标签的统计信息
 	GetMetadata() iris.Map
 
+	// 增
 	InsertTag(tag model.Tag) error
+
+	// 删
+	DeleteTags(ids []uint) error
 }
 
 type tagService struct {
@@ -131,6 +136,15 @@ func (s *tagService) GetMetadata() iris.Map {
 
 func (s *tagService) InsertTag(tag model.Tag) error {
 	result := s.DB.Create(&tag)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (s *tagService) DeleteTags(ids []uint) error {
+	result := s.DB.Delete(&model.Tag{}, ids)
 	if result.Error != nil {
 		return result.Error
 	}
