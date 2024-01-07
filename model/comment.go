@@ -12,7 +12,7 @@ type Comment struct {
 
 	// belongs to 关系
 	ContentID uint    `json:"-" gorm:"default:null"`
-	Content   Content `json:"-" gorm:"default:null,OnDelete:CASCADE"`
+	Content   Content `json:"content,omitempty" gorm:"default:null,OnDelete:CASCADE"`
 
 	CreatedAt int `json:"createdAt"  gorm:"autoCreateTime:milli"`
 

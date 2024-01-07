@@ -17,6 +17,7 @@ type CommentService interface {
 
 	// 查
 	GetComments(pageIndex int, pageSize int, order string) []model.Comment
+	GetCommentsWithContentTitle(pageIndex int, pageSize int, order string) []model.Comment
 	GetCommentsCount(contentID int64) int64
 	GetCommentByID(id int) model.Comment
 	GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) []model.Comment
@@ -63,6 +64,14 @@ func (s *commentService) GetComments(pageIndex int, pageSize int, order string) 
 	var results []model.Comment
 
 	s.DB.Model(&model.Comment{}).Offset(pageIndex * pageSize).Limit(pageSize).Order(order).Find(&results)
+
+	return results
+}
+
+func (s *commentService) GetCommentsWithContentTitle(pageIndex int, pageSize int, order string) []model.Comment {
+	var results []model.Comment
+
+	s.DB.Model(&model.Comment{}).Offset(pageIndex * pageSize).Limit(pageSize).Order(order).Preload("Content").Find(&results)
 
 	return results
 }

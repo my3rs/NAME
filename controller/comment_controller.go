@@ -38,10 +38,11 @@ type PostCommentResponse struct {
 }
 
 type getCommentsRequest struct {
-	PageSize  int    `url:"pageSize" json:"pageSize"`
-	PageIndex int    `url:"pageIndex" json:"pageIndex"`
-	Order     string `url:"orderBy" json:"orderBy,omitempty"`
-	ContentID uint   `url:"contentID" json:"contentID"`
+	PageSize    int    `url:"pageSize" json:"pageSize"`
+	PageIndex   int    `url:"pageIndex" json:"pageIndex"`
+	Order       string `url:"orderBy" json:"orderBy,omitempty"`
+	ContentID   uint   `url:"contentID" json:"contentID"`
+	WithContent string `url:"withContent" json:"withContent"`
 }
 
 func replaceNonEmptyFields(src, dst *model.Comment) {
@@ -158,7 +159,18 @@ func (c *CommentController) Get(req getCommentsRequest) {
 	}
 
 	// 获取所有评论
-	data := c.CommentService.GetComments(req.PageIndex-1, req.PageSize, req.Order)
+
+	var data []model.Comment
+	switch req.WithContent {
+	case "title":
+		data = c.CommentService.GetCommentsWithContentTitle(req.PageIndex-1, req.PageSize, req.Order)
+		break
+	default:
+
+		data = c.CommentService.GetComments(req.PageIndex-1, req.PageSize, req.Order)
+		break
+	}
+
 	var page model.Page
 
 	page.PageIndex = req.PageIndex
