@@ -1,9 +1,10 @@
 package model
 
 type QueryRequest struct {
-	PageSize  int    `url:"pageSize" json:"pageSize"`
-	PageIndex int    `url:"pageIndex" json:"pageIndex"`
-	Order     string `url:"orderBy" json:"orderBy,omitempty"`
+	PageSize         int    `url:"pageSize" json:"pageSize"`
+	PageIndex        int    `url:"pageIndex" json:"pageIndex"`
+	Order            string `url:"orderBy" json:"orderBy,omitempty"`
+	WithReadablePath bool   `url:"withReadablePath" json:"withReadablePath,omitempty"`
 }
 
 type PostRequest struct {

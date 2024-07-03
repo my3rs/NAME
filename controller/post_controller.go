@@ -60,25 +60,28 @@ func replaceContentNonEmptyFields(src, dst *model.Content) {
 	}
 }
 
-func (c *PostController) Get(req model.QueryRequest) model.Response {
+func (c *PostController) Get(req model.QueryRequest) iris.Map {
 
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
-		c.Ctx.Application().Logger().Info("request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)
+		c.Ctx.Application().Logger().Error("Bad request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)
+
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
+		return iris.Map{
+			"success": false,
+			"message": dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex",
+		}
 	}
 
-	var rsp model.Response
 	var page model.Page
 
-	page.ContentCount = c.Service.GetPostsCount()
+	page.ItemsCount = c.Service.GetPostsCount()
 	page.PageIndex = req.PageIndex
 	page.PageSize = req.PageSize
-	page.PageCount = page.ContentCount/int64(req.PageSize) + 1
+	page.PageCount = page.ItemsCount/int64(req.PageSize) + 1
 
 	if int64(req.PageIndex) > page.PageCount {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: "pageIndex too large"}
+		return iris.Map{"Success": false, "Message": "pageIndex too large"}
 	}
 
 	if len(req.Order) == 0 {
@@ -88,12 +91,11 @@ func (c *PostController) Get(req model.QueryRequest) model.Response {
 
 	posts := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
 
-	rsp.Data = posts
-	rsp.Page = &page
-
-	rsp.Success = true
-
-	return rsp
+	return iris.Map{
+		"success":    true,
+		"items":      posts,
+		"pagination": &page,
+	}
 }
 
 func (c *PostController) GetBy(id int) model.Response {
@@ -149,7 +151,7 @@ func (c *PostController) Post(req model.PostRequest) model.Response {
 	return model.Response{Success: true}
 }
 
-// Patch handles PATCH /api/v1/post/{:id} 更新评论（指定字段）
+// PatchBy handles PATCH /api/v1/post/{:id} 更新评论（指定字段）
 func (c *PostController) PatchBy(id uint) model.Response {
 	var req model.Content
 	if err := c.Ctx.ReadJSON(&req); err != nil {
@@ -198,6 +200,10 @@ func (c *PostController) PutBy(id int) model.Response {
 		AllowComment: req.AllowComment,
 		Tags:         req.Tags,
 	}
+	if env, _ := model.GetSettingsItem("environment"); env.Value == model.EnvironmentDev {
+		c.Ctx.Application().Logger().Infof("更新文章 %+v", post)
+	}
+
 	err = c.Service.UpdatePost(post)
 
 	if err != nil {

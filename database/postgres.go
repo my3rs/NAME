@@ -39,6 +39,7 @@ func initPostgres() {
 		&model.User{},
 		&model.Tag{},
 		&model.Setting{},
+		&model.Category{},
 	)
 	if err != nil {
 		log.Println("数据库迁移失败：", err)

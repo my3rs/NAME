@@ -25,7 +25,7 @@ type Comment struct {
 	Mail   string `json:"mail"`
 	URL    string `json:"url"`
 	Text   string `json:"text"`
-	Status uint   `json:"status" gorm:"default:1"` // 默认值为 1，即等待审核
+	Status uint   `json:"status" gorm:"default:0"` // 默认值为 0，即通过审核
 	IP     string `json:"-"`
 	Agent  string `json:"agent"`
 

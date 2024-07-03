@@ -4,8 +4,6 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
-	"strconv"
-
 	"github.com/kataras/iris/v12"
 )
 
@@ -24,21 +22,14 @@ func (c *UserController) Get(req model.QueryRequest) model.TestResponse {
 	var rsp model.TestResponse
 	var page model.Page
 
-	page.ContentCount = c.UserService.GetUserNum()
+	page.ItemsCount = c.UserService.GetUserNum()
 	page.PageIndex = req.PageIndex
 	page.PageSize = req.PageSize
-	page.PageCount = page.ContentCount/int64(req.PageSize) + 1
+	page.PageCount = page.ItemsCount/int64(req.PageSize) + 1
 
 	if int64(req.PageIndex) > page.PageCount {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.TestResponse{Success: false, Message: "pageIndex too large"}
-	}
-
-	if req.PageIndex > 1 {
-		page.Pre = "http://localhost:8000/api/v1/users&pageIndex=" + strconv.Itoa(req.PageIndex-1) + "pageSize=" + strconv.Itoa(req.PageSize)
-	}
-	if int64(req.PageIndex) < page.PageCount {
-		page.Next = "http://localhost:8000/api/v1/users&pageIndex=" + strconv.Itoa(req.PageIndex+1) + "pageSize=" + strconv.Itoa(req.PageSize)
 	}
 
 	if len(req.Order) == 0 {
