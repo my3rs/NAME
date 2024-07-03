@@ -33,6 +33,9 @@ type Content struct {
 	AuthorId uint `json:"-"`
 	Author   User `json:"author"`
 
+	CategoryID uint     `json:"-"`
+	Category   Category `json:"category"`
+
 	CreatedAt    int64         `json:"createdAt" gorm:"autoCreateTime:milli"`
 	UpdatedAt    int64         `json:"updatedAt" gorm:"autoUpdateTime:milli"`
 	PublishAt    int64         `json:"publishAt"`
