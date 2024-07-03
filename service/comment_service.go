@@ -9,11 +9,12 @@ import (
 )
 
 type CommentService interface {
-	// 增
+	// 增加评论
 	InsertComment(comment model.Comment) error
 
 	// 删
 	DeleteComment(id uint) error
+	DeleteBatchComment(ids []uint) (int64, error)
 
 	// 查
 	GetComments(pageIndex int, pageSize int, order string) []model.Comment
@@ -117,4 +118,13 @@ func (s *commentService) DeleteComment(id uint) error {
 	}
 
 	return nil
+}
+
+func (s *commentService) DeleteBatchComment(ids []uint) (int64, error) {
+	result := s.DB.Delete(&model.Comment{}, ids)
+	if result.Error != nil {
+		return result.RowsAffected, result.Error
+	}
+
+	return result.RowsAffected, nil
 }

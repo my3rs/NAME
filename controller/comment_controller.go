@@ -5,6 +5,8 @@ import (
 	"NAME/model"
 	"NAME/service"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/kataras/iris/v12"
 )
@@ -91,6 +93,7 @@ func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 		IP:         req.IP,
 		Agent:      req.Agent,
 		ParentID:   req.ParentID,
+		Status:     model.CommentStatus_Approved,
 	}
 
 	// 如果是已登录用户，直接从数据库中获取用户信息
@@ -145,7 +148,7 @@ func (c *CommentController) Get(req getCommentsRequest) {
 		page.PageIndex = req.PageIndex
 		page.PageSize = len(data)
 		page.Order = req.Order
-		page.ContentCount = c.CommentService.GetCommentsCount(int64(req.ContentID))
+		page.ItemsCount = c.CommentService.GetCommentsCount(int64(req.ContentID))
 
 		c.Ctx.StatusCode(iris.StatusOK)
 		c.Ctx.JSON(iris.Map{
@@ -176,7 +179,7 @@ func (c *CommentController) Get(req getCommentsRequest) {
 	page.PageIndex = req.PageIndex
 	page.PageSize = len(data)
 	page.Order = req.Order
-	page.ContentCount = c.CommentService.GetCommentsCount(0)
+	page.ItemsCount = c.CommentService.GetCommentsCount(0)
 
 	c.Ctx.StatusCode(iris.StatusOK)
 	c.Ctx.JSON(iris.Map{
@@ -238,11 +241,51 @@ func (c *CommentController) PatchBy(id uint) model.Response {
 	return model.Response{Success: true, Message: "Succeed to update comment"}
 }
 
-// DeleteBy handles DELETE /api/v1/comments/{:id} 删除评论
-func (c *CommentController) DeleteBy(id uint) model.Response {
-	if err := c.CommentService.DeleteComment(id); err != nil {
-		return model.Response{Success: false, Message: err.Error()}
+// DeleteBy handles DELETE /api/v1/comments/{:ids_string} 删除评论
+// Request example: DELETE /api/v1/comments/1,2,3
+func (c *CommentController) DeleteBy(idsReq string) {
+	if len(idsReq) == 0 {
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		c.Ctx.JSON(iris.Map{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
 	}
 
-	return model.Response{Success: true, Message: "Succeed to delete comment"}
+	var ids []uint
+	idsStr := strings.Split(idsReq, ",")
+	for _, item := range idsStr {
+		if len(item) == 0 {
+			continue
+		}
+		id, err := strconv.Atoi(item)
+		if err != nil {
+			c.Ctx.StatusCode(iris.StatusBadRequest)
+			c.Ctx.JSON(iris.Map{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		ids = append(ids, uint(id))
+	}
+
+	cnt, err := c.CommentService.DeleteBatchComment(ids)
+	if err != nil {
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		c.Ctx.JSON(iris.Map{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.Ctx.StatusCode(iris.StatusOK)
+	c.Ctx.JSON(iris.Map{
+		"Success": true,
+		"Message": "成功删除" + strconv.Itoa(int(cnt)) + "条评论",
+	})
+
+	return
 }
