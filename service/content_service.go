@@ -5,6 +5,7 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
+	"github.com/kataras/iris/v12"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday/v2"
 	"html/template"
@@ -26,6 +27,8 @@ type ContentService interface {
 	GetPureContentByID(id int) model.Content
 
 	GetPageCount() int64
+
+	GetMeta() iris.Map
 }
 
 type contentService struct {
@@ -160,4 +163,20 @@ func (s *contentService) GetPageCount() int64 {
 	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePage).Count(&count)
 
 	return count
+}
+
+func (s *contentService) GetMeta() iris.Map {
+	var postCount, pageCount, commentCount, tagCount int64
+
+	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePost).Count(&postCount)
+	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePage).Count(&pageCount)
+	s.Db.Model(&model.Comment{}).Count(&commentCount)
+	s.Db.Model(&model.Tag{}).Count(&tagCount)
+
+	return iris.Map{
+		"posts_count":    postCount,
+		"pages_count":    pageCount,
+		"comments_count": commentCount,
+		"tags_count":     tagCount,
+	}
 }

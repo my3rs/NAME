@@ -16,12 +16,22 @@ import (
 )
 
 func InitRoute(app *iris.Application) {
-	// create directory to store uploaded files
+	// 创建保存附件的目录
 	os.Mkdir(conf.Config().DataPath, 0700)
 	err := os.Mkdir(conf.Config().DataPath+"/uploads", 0700)
 	if err != nil {
 		app.Logger().Info("Failed to create data folder: ", err)
 	}
+
+	// 博客状态
+	meta := app.Party("/api/v1/meta")
+	mvc.Configure(meta, func(app *mvc.Application) {
+		app.Register(
+			database.GetDB(),
+			service.NewContentService(),
+		)
+		app.Handle(new(controller.MetaController))
+	})
 
 	// 认证
 	apiAuth := app.Party("/api/v1/auth")
@@ -70,10 +80,6 @@ func InitRoute(app *iris.Application) {
 
 	// 评论
 	comments := app.Party("/api/v1/comments")
-	//if conf.Config().Mode == conf.PROD {
-	//	comments.Use(jwtMiddleware)
-	//}
-	comments.Use(jwtMiddleware)
 	mvc.Configure(comments, func(application *mvc.Application) {
 		application.Register(
 			database.GetDB,
