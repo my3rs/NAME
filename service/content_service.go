@@ -166,17 +166,19 @@ func (s *contentService) GetPageCount() int64 {
 }
 
 func (s *contentService) GetMeta() iris.Map {
-	var postCount, pageCount, commentCount, tagCount int64
+	var postCount, pageCount, commentCount, tagCount, categoryCount int64
 
 	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePost).Count(&postCount)
 	s.Db.Model(&model.Content{}).Where("type = ?", model.ContentTypePage).Count(&pageCount)
 	s.Db.Model(&model.Comment{}).Count(&commentCount)
 	s.Db.Model(&model.Tag{}).Count(&tagCount)
+	s.Db.Model(&model.Category{}).Count(&categoryCount)
 
 	return iris.Map{
-		"posts_count":    postCount,
-		"pages_count":    pageCount,
-		"comments_count": commentCount,
-		"tags_count":     tagCount,
+		"posts_count":      postCount,
+		"pages_count":      pageCount,
+		"comments_count":   commentCount,
+		"tags_count":       tagCount,
+		"categories_count": categoryCount,
 	}
 }

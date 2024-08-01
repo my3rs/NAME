@@ -56,7 +56,9 @@ func InitRoute(app *iris.Application) {
 		app.Handle(new(controller.AttachmentController))
 	})
 
-	// Everyone can GET from /api/API_VERSION/posts
+	// 文章
+
+	// 所有人都可以向 /api/API_VERSION/posts 发送GET请求
 	jwtFilter := func(ctx iris.Context) bool {
 		if method := ctx.Method(); method == iris.MethodGet {
 			ctx.Next()
@@ -76,6 +78,16 @@ func InitRoute(app *iris.Application) {
 			service.NewTagService,
 		)
 		application.Handle(new(controller.PostController))
+	})
+
+	// 文章分类
+	categories := app.Party("/api/v1/categories")
+	mvc.Configure(categories, func(app *mvc.Application) {
+		app.Register(
+			database.GetDB(),
+			service.NewCategoryService(),
+		)
+		app.Handle(new(controller.CategoryController))
 	})
 
 	// 评论
