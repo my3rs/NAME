@@ -12,5 +12,5 @@ type Tag struct {
 
 type TagExt struct {
 	Tag
-	ReadablePath string `gorm:"->" json:"readablePath"`
+	ReadablePath string `gorm:"->" json:"readablePath,omitempty"`
 }

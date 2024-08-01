@@ -9,7 +9,6 @@ import (
 )
 
 type getTagsRequest struct {
-	Meta string `url:"meta" json:"meta"`
 	Path string `url:"path" json:"path"`
 }
 
@@ -24,32 +23,21 @@ type TagController struct {
 	Service service.TagService
 }
 
-func (c *TagController) Get(request getTagsRequest) {
-	var meta iris.Map
-	if request.Meta != "" {
-		meta = c.Service.GetMetadata()
-	}
+func (c *TagController) Get(request getTagsRequest) iris.Map {
+	var tags []model.TagExt
 
 	if request.Path != "" {
-		tags := c.Service.GetAllTagsWithPath()
-
+		tags = c.Service.GetAllTagsWithPath()
 		c.Ctx.StatusCode(iris.StatusOK)
-		c.Ctx.JSON(iris.Map{
-			"success": true,
-			"data":    tags,
-			"meta":    meta,
-		})
-
 	} else {
-		tags := c.Service.GetAllTags()
+		tags = c.Service.GetAllTags()
 		c.Ctx.StatusCode(iris.StatusOK)
-		c.Ctx.JSON(iris.Map{
-			"success": true,
-			"data":    tags,
-		})
 	}
 
-	return
+	return iris.Map{
+		"success": true,
+		"items":   tags,
+	}
 }
 
 func (c *TagController) Post(req newTagRequest) {

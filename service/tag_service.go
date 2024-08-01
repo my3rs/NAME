@@ -31,7 +31,7 @@ GROUP BY
 type TagService interface {
 	// 查
 	GetTagByID(id uint) (model.Tag, error)
-	GetAllTags() []model.Tag
+	GetAllTags() []model.TagExt
 	GetAllTagsWithPath() []model.TagExt
 	GetTagsWithOrder(pageIndex int, pageSize int, order string) ([]model.Tag, error)
 	GetTagsCount() int64
@@ -70,14 +70,23 @@ func (s *tagService) GetTagByID(id uint) (model.Tag, error) {
 	return tag, nil
 }
 
-func (s *tagService) GetAllTags() []model.Tag {
+func (s *tagService) GetAllTags() []model.TagExt {
 	var tags []model.Tag
 	if result := s.DB.Order("path").Find(&tags); result.Error != nil {
-
-		return []model.Tag{}
+		return []model.TagExt{}
 	}
 
-	return tags
+	// 将 Tag 数组转换为 TagExt 数组
+	tagExts := make([]model.TagExt, len(tags))
+	for i, tag := range tags {
+		tagExts[i] = model.TagExt{
+			Tag: tag,
+			// 如果需要，可以在这里设置 ReadablePath
+			// ReadablePath: 计算可读路径的逻辑
+		}
+	}
+
+	return tagExts
 }
 
 func (s *tagService) GetAllTagsWithPath() []model.TagExt {
