@@ -43,10 +43,11 @@ type Content struct {
 	AllowComment bool          `json:"allowComment"`
 	Password     string        `json:"-"`
 
-	Tags []Tag `json:"tags" gorm:"many2many:content_tags"`
+	Tags []Tag `json:"tags" gorm:"many2many:content_tags;constraint:OnDelete:CASCADE"`
 
-	ViewsNum    uint `json:"viewsNum"`
-	CommentsNum uint `json:"commentsNum"`
+	ViewsNum    uint      `json:"viewsNum"`
+	CommentsNum uint      `json:"commentsNum"`
+	Comments    []Comment `json:"comments" gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func (c *Content) GetAuthor() User {

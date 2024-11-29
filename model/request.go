@@ -13,6 +13,7 @@ type PostRequest struct {
 	Abstract     string        `json:"abstract"`
 	Text         string        `json:"text"`
 	AuthorID     uint          `json:"authorID"`
+	CategoryID   uint          `json:"categoryID"`
 	Status       ContentStatus `json:"status"`
 	CreatedAt    int64         `json:"createdAt"`
 	UpdatedAt    int64         `json:"updatedAt"`

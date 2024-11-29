@@ -5,6 +5,7 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday/v2"
@@ -69,26 +70,24 @@ func (s *contentService) InsertPost(post model.Content) error {
 }
 
 func (s *contentService) DeletePostByIDs(ids []uint) error {
-	// result := s.Db.Select(clause.Associations).Delete(&model.Content{}, ids)
-	// result := s.Db.Select("Tags").Delete(&model.Content{}, ids)
-	// s.Db.Model(&model.Content{}, ids).Association("Tags").Delete(&model.Tag{}, ids)
-	// result := s.Db.Where("type = ?", model.ContentTypePost).Delete(&model.Content{}, ids)
-	// result := s.Db.Model(&model.Content{}).Select("Tags").Delete(&model.Content{}, ids)
-	// if result.Error != nil {
-	// 	return result.Error
-	// }
+	return s.Db.Transaction(func(tx *gorm.DB) error {
+		// 1. 先删除 content_tags 中间表的关联
+		if err := tx.Table("content_tags").Where("content_id IN ?", ids).Delete(&struct{}{}).Error; err != nil {
+			return fmt.Errorf("failed to delete content_tags: %w", err)
+		}
 
-	var contents []model.Content
-	s.Db.Where("type = ?", model.ContentTypePost).Find(&contents, ids)
-	for _, content := range contents {
-		s.Db.Model(&content).Association("Tags").Clear()
-	}
-	result := s.Db.Delete(&contents)
-	if result.Error != nil {
-		return result.Error
-	}
+		// 2. 删除评论
+		if err := tx.Where("content_id IN ?", ids).Delete(&model.Comment{}).Error; err != nil {
+			return fmt.Errorf("failed to delete comments: %w", err)
+		}
 
-	return nil
+		// 3. 最后删除内容
+		if err := tx.Where("id IN ?", ids).Delete(&model.Content{}).Error; err != nil {
+			return fmt.Errorf("failed to delete contents: %w", err)
+		}
+
+		return nil
+	})
 }
 
 func (s *contentService) UpdatePost(post model.Content) error {
