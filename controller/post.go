@@ -21,6 +21,20 @@ type PostController struct {
 	TagService service.TagService
 }
 
+type postContentRequest struct {
+	Title        string              `json:"title"`
+	Abstract     string              `json:"abstract"`
+	Text         string              `json:"text"`
+	AuthorID     uint                `json:"authorID"`
+	CategoryID   uint                `json:"categoryID"`
+	Status       model.ContentStatus `json:"status"`
+	CreatedAt    int64               `json:"createdAt"`
+	UpdatedAt    int64               `json:"updatedAt"`
+	PublishAt    int64               `json:"publishAt"`
+	AllowComment bool                `json:"allowComment"`
+	Tags         []model.Tag         `json:"tags"`
+}
+
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func RandStringRunes(n int) string {
@@ -127,13 +141,14 @@ func (c *PostController) GetBy(id int) model.Response {
 	}
 }
 
-func (c *PostController) Post(req model.PostRequest) model.Response {
+func (c *PostController) Post(req postContentRequest) model.Response {
 	var post = model.Content{
 		Type:         model.ContentTypePost,
 		Title:        req.Title,
 		Text:         req.Text,
 		Abstract:     req.Abstract,
 		AuthorId:     req.AuthorID,
+		CategoryID:   req.CategoryID,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
