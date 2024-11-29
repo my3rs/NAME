@@ -141,6 +141,14 @@ func trimQuotes(s string) string {
 	return s
 }
 
+// GetClaims returns the current authorized client claims.
+func GetClaims(ctx iris.Context) *UserClaims {
+	if claims := jwt.Get(ctx); claims != nil {
+		return claims.(*UserClaims)
+	}
+	return nil
+}
+
 // CheckTokenFormat check token's length and prefix
 //func CheckTokenFormat(token string) error {
 //	if len(token) == 0 {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"NAME/dict"
+	"NAME/middleware"
 	"NAME/model"
 	"NAME/service"
 	"github.com/kataras/iris/v12"
@@ -50,4 +51,27 @@ func (c *UserController) Get(req model.QueryRequest) model.TestResponse {
 
 	return rsp
 
+}
+
+// GetMe 获取当前登录用户信息
+// handle GET /api/v1/users/me
+func (c *UserController) GetMe() model.TestResponse {
+	// 从 JWT Claims 获取当前用户信息
+	claims := middleware.GetClaims(c.Ctx)
+	if claims == nil {
+		c.Ctx.StatusCode(iris.StatusUnauthorized)
+		return model.TestResponse{Success: false, Message: "未登录"}
+	}
+
+	// 获取用户信息
+	user, err := c.UserService.GetUserByID(int(claims.ID))
+	if err != nil {
+		c.Ctx.StatusCode(iris.StatusInternalServerError)
+		return model.TestResponse{Success: false, Message: err.Error()}
+	}
+
+	return model.TestResponse{
+		Success: true,
+		Data:    user,
+	}
 }
