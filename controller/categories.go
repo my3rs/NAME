@@ -16,9 +16,9 @@ type CategoryController struct {
 }
 
 type postRequest struct {
-	ID    uint   `json:"id"`
-	Title string `json:"title"`
-	Slug  string `json:"slug"`
+	ID   uint   `json:"id"`
+	Text string `json:"text"`
+	No   string `json:"no"`
 }
 
 func (c *CategoryController) Get(req model.QueryRequest) iris.Map {
@@ -66,27 +66,27 @@ func (c *CategoryController) Get(req model.QueryRequest) iris.Map {
 
 // Post handles POST /api/v1/categories
 func (c *CategoryController) Post(req postRequest) iris.Map {
-	if req.Title == "" || len(req.Title) == 0 {
+	if req.Text == "" || len(req.Text) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return iris.Map{
 			"success": false,
-			"message": "title cannot be empty",
+			"message": "text cannot be empty",
 		}
 	}
 
 	// 后端不允许空的 slug 值
 	// TODO: 在前端检测到中文标题时，自动生成其拼音作为 slug 值
-	if req.Slug == "" || len(req.Slug) == 0 {
+	if req.No == "" || len(req.No) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return iris.Map{
 			"success": false,
-			"message": "slug cannot be empty",
+			"message": "no cannot be empty",
 		}
 	}
 
 	var category = model.Category{
-		Title: req.Title,
-		Slug:  req.Slug,
+		Text: req.Text,
+		No:   req.No,
 	}
 
 	err := c.CategoryService.InsertCategory(category)
@@ -132,28 +132,28 @@ func (c *CategoryController) PutBy(id int) iris.Map {
 		}
 	}
 
-	if req.Title == "" || len(req.Title) == 0 {
+	if req.Text == "" || len(req.Text) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return iris.Map{
 			"success": false,
-			"message": "title cannot be empty",
+			"message": "text cannot be empty",
 		}
 	}
 
 	// 后端不允许空的 slug 值
 	// TODO: 在前端检测到中文标题时，自动生成其拼音作为 slug 值
-	if req.Slug == "" || len(req.Slug) == 0 {
+	if req.No == "" || len(req.No) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return iris.Map{
 			"success": false,
-			"message": "slug cannot be empty",
+			"message": "no cannot be empty",
 		}
 	}
 
 	var category = model.Category{
-		ID:    req.ID,
-		Title: req.Title,
-		Slug:  req.Slug,
+		ID:   req.ID,
+		Text: req.Text,
+		No:   req.No,
 	}
 
 	err = c.CategoryService.UpdateCategory(category)
