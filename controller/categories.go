@@ -21,67 +21,39 @@ type postRequest struct {
 	No   string `json:"no"`
 }
 
-func (c *CategoryController) Get(req model.QueryRequest) iris.Map {
+func (c *CategoryController) Get(req model.QueryRequest) model.PageResponse {
 	// 检查请求参数
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
 		c.Ctx.Application().Logger().Error("Bad request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)
-
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex",
-		}
+		return model.NewPageResponse(false, dict.ErrInvalidParameters.Error()+": pageSize or pageIndex", nil, req.PageIndex, req.PageSize, 0)
 	}
 
-	// 构造分页
-	var page model.Page
-	page.PageIndex = req.PageIndex
-	page.PageSize = req.PageSize
-	page.ItemsCount = c.CategoryService.GetCategoriesCount()
-	page.PageCount = page.ItemsCount/int64(req.PageSize) + 1
-
-	if int64(req.PageIndex) > page.PageCount {
+	total := c.CategoryService.GetCategoriesCount()
+	if int64(req.PageIndex) > (total/int64(req.PageSize) + 1) {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "pageIndex too large",
-		}
+		return model.NewPageResponse(false, "pageIndex too large", nil, req.PageIndex, req.PageSize, total)
 	}
 
 	if req.Order == "" {
 		req.Order = "created_at desc"
 	}
 
-	page.Order = req.Order
-
-	// 读取数据并返回
+	// 读取数据
 	items := c.CategoryService.GetCategories(req.PageIndex-1, req.PageSize, req.Order)
 
-	return iris.Map{
-		"success":    true,
-		"items":      items,
-		"pagination": &page,
-	}
+	return model.NewPageResponse(true, "success", items, req.PageIndex, req.PageSize, total)
 }
 
-// Post handles POST /api/v1/categories
-func (c *CategoryController) Post(req postRequest) iris.Map {
-	if req.Text == "" || len(req.Text) == 0 {
+func (c *CategoryController) Post(req postRequest) model.EmptyResponse {
+	if req.Text == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "text cannot be empty",
-		}
+		return model.EmptyResponse{Success: false, Message: "text cannot be empty"}
 	}
 
-	// 后端不允许空的 slug 值
-	// TODO: 在前端检测到中文标题时，自动生成其拼音作为 slug 值
-	if req.No == "" || len(req.No) == 0 {
+	if req.No == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "no cannot be empty",
-		}
+		return model.EmptyResponse{Success: false, Message: "no cannot be empty"}
 	}
 
 	var category = model.Category{
@@ -92,62 +64,38 @@ func (c *CategoryController) Post(req postRequest) iris.Map {
 	err := c.CategoryService.InsertCategory(category)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": err,
-		}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
-	return iris.Map{
-		"success": true,
-	}
-
+	return model.EmptyResponse{Success: true, Message: "success"}
 }
 
-// PutBy handles POST /api/v1/categories/{id:int}
-func (c *CategoryController) PutBy(id int) iris.Map {
+func (c *CategoryController) PutBy(id int) model.EmptyResponse {
 	if id <= 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "无效ID",
-		}
+		return model.EmptyResponse{Success: false, Message: "无效ID"}
 	}
 
 	var req postRequest
 	err := c.Ctx.ReadJSON(&req)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": err,
-		}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
 	if id != int(req.ID) {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "无效ID",
-		}
+		return model.EmptyResponse{Success: false, Message: "无效ID"}
 	}
 
-	if req.Text == "" || len(req.Text) == 0 {
+	if req.Text == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "text cannot be empty",
-		}
+		return model.EmptyResponse{Success: false, Message: "text cannot be empty"}
 	}
 
-	// 后端不允许空的 slug 值
-	// TODO: 在前端检测到中文标题时，自动生成其拼音作为 slug 值
-	if req.No == "" || len(req.No) == 0 {
+	if req.No == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "no cannot be empty",
-		}
+		return model.EmptyResponse{Success: false, Message: "no cannot be empty"}
 	}
 
 	var category = model.Category{
@@ -159,25 +107,16 @@ func (c *CategoryController) PutBy(id int) iris.Map {
 	err = c.CategoryService.UpdateCategory(category)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": err,
-		}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
-	return iris.Map{
-		"success": true,
-	}
+	return model.EmptyResponse{Success: true, Message: "success"}
 }
 
-// DeleteBy handles DELETE /api/v1/tag/1,2,3 批量删除标签
-func (c *CategoryController) DeleteBy(idsReq string) iris.Map {
+func (c *CategoryController) DeleteBy(idsReq string) model.BatchResponse {
 	if len(idsReq) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": "bad params in url",
-		}
+		return model.BatchResponse{Success: false, Message: "bad params in url"}
 	}
 
 	// 去掉末尾的逗号
@@ -195,10 +134,7 @@ func (c *CategoryController) DeleteBy(idsReq string) iris.Map {
 		id, err := strconv.Atoi(item)
 		if err != nil {
 			c.Ctx.StatusCode(iris.StatusBadRequest)
-			return iris.Map{
-				"success": false,
-				"message": err.Error(),
-			}
+			return model.BatchResponse{Success: false, Message: err.Error()}
 		}
 		ids = append(ids, uint(id))
 	}
@@ -207,14 +143,9 @@ func (c *CategoryController) DeleteBy(idsReq string) iris.Map {
 	err := c.CategoryService.DeleteCategories(ids)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": err,
-		}
+		return model.BatchResponse{Success: false, Message: err.Error()}
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-	return iris.Map{
-		"success": true,
-	}
+	return model.NewBatchResponse(true, "success", ids, nil)
 }

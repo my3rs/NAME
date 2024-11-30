@@ -4,6 +4,7 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
+	"fmt"
 	"log"
 	"math/rand"
 	"reflect"
@@ -16,17 +17,18 @@ import (
 )
 
 type PostController struct {
-	Ctx        iris.Context
-	Service    service.ContentService
-	TagService service.TagService
+	Ctx             iris.Context
+	Service         service.ContentService
+	TagService      service.TagService
+	CategoryService service.CategoryService
 }
 
 type postContentRequest struct {
 	Title        string              `json:"title"`
 	Abstract     string              `json:"abstract"`
 	Text         string              `json:"text"`
-	AuthorID     uint                `json:"authorID"`
-	CategoryID   uint                `json:"categoryID"`
+	Author       model.User          `json:"author"`
+	Category     model.Category      `json:"category"`
 	Status       model.ContentStatus `json:"status"`
 	CreatedAt    int64               `json:"createdAt"`
 	UpdatedAt    int64               `json:"updatedAt"`
@@ -74,49 +76,37 @@ func replaceContentNonEmptyFields(src, dst *model.Content) {
 	}
 }
 
-func (c *PostController) Get(req model.QueryRequest) iris.Map {
-
-	if req.PageSize <= 0 || req.PageIndex <= 0 {
-		c.Ctx.Application().Logger().Error("Bad request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)
-
+func (c *PostController) Get(req model.QueryRequest) model.PageResponse {
+	// check parameters
+	if req.PageSize <= 0 || req.PageIndex < 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{
-			"success": false,
-			"message": dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex",
-		}
+		return model.NewPageResponse(false, dict.ErrInvalidParameters.Error()+": pageSize or pageIndex", nil, req.PageIndex, req.PageSize, 0)
 	}
 
-	var page model.Page
+	// get total count
+	count := c.Service.GetPostsCount()
+	if count == 0 {
+		return model.NewPageResponse(true, "success", []model.Content{}, req.PageIndex, req.PageSize, 0)
+	}
 
-	page.ItemsCount = c.Service.GetPostsCount()
-	page.PageIndex = req.PageIndex
-	page.PageSize = req.PageSize
-	page.PageCount = page.ItemsCount/int64(req.PageSize) + 1
-
-	if int64(req.PageIndex) > page.PageCount {
+	// check pageIndex
+	maxPageIndex := (count - 1) / int64(req.PageSize)
+	if int64(req.PageIndex) > maxPageIndex {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{"Success": false, "Message": "pageIndex too large"}
+		return model.NewPageResponse(false, "pageIndex too large", nil, req.PageIndex, req.PageSize, count)
 	}
 
-	if len(req.Order) == 0 {
-		req.Order = "created_at desc"
-	}
-	page.Order = req.Order
+	// get posts
+	posts := c.Service.GetPostsWithOrder(req.PageIndex, req.PageSize, req.Order)
 
-	posts := c.Service.GetPostsWithOrder(req.PageIndex-1, req.PageSize, req.Order)
-
-	return iris.Map{
-		"success":    true,
-		"items":      posts,
-		"pagination": &page,
-	}
+	return model.NewPageResponse(true, "success", posts, req.PageIndex, req.PageSize, count)
 }
 
-func (c *PostController) GetBy(id int) model.Response {
+func (c *PostController) GetBy(id int) model.DetailResponse {
 	post, err := c.Service.GetContentByID(id)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
 	readablePath, err := strconv.ParseBool(c.Ctx.URLParam("readablePath"))
@@ -135,23 +125,20 @@ func (c *PostController) GetBy(id int) model.Response {
 		}
 	}
 
-	return model.Response{
-		Success: true,
-		Data:    []model.Content{post},
-	}
+	return model.DetailResponse{Success: true, Message: "success", Data: post}
 }
 
-func (c *PostController) Post(req postContentRequest) model.Response {
+func (c *PostController) Post(req postContentRequest) model.EmptyResponse {
 	var post = model.Content{
 		Type:         model.ContentTypePost,
 		Title:        req.Title,
 		Text:         req.Text,
 		Abstract:     req.Abstract,
-		AuthorId:     req.AuthorID,
-		CategoryID:   req.CategoryID,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
+		Category:     req.Category,
+		Author:       req.Author,
 		Tags:         req.Tags,
 	}
 
@@ -159,176 +146,122 @@ func (c *PostController) Post(req postContentRequest) model.Response {
 	if err != nil {
 		c.Ctx.Application().Logger().Info(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
-	c.Ctx.StatusCode(iris.StatusOK)
-	return model.Response{Success: true}
+	return model.EmptyResponse{Success: true, Message: "success"}
 }
 
-// PatchBy handles PATCH /api/v1/post/{:id} 更新评论（指定字段）
-func (c *PostController) PatchBy(id uint) model.Response {
+func (c *PostController) PatchBy(id uint) model.EmptyResponse {
 	var req model.Content
 	if err := c.Ctx.ReadJSON(&req); err != nil {
 		c.Ctx.Application().Logger().Error("Failed to read json from PUT post request: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
 	post := c.Service.GetPureContentByID(int(id))
 	if post.ID == 0 {
 		c.Ctx.Application().Logger().Error("Post doesn't exist, id = ", id)
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: "Post doesn't exist"}
+		return model.EmptyResponse{Success: false, Message: "Post doesn't exist"}
 	}
 
 	replaceContentNonEmptyFields(&req, &post)
 	c.Service.UpdatePost(post)
 
-	return model.Response{Success: true, Message: "Succeed to update post"}
+	return model.EmptyResponse{Success: true, Message: "success"}
 }
 
-func (c *PostController) PutBy(id int) model.Response {
-	var req model.PostRequest
+func (c *PostController) PutBy(id int) model.EmptyResponse {
+	var req model.Content
 	err := c.Ctx.ReadJSON(&req)
 	if err != nil {
-		c.Ctx.StatusCode(400)
-		return model.Response{Success: false, Message: err.Error()}
+		c.Ctx.Application().Logger().Error("Failed to read json from PUT post request: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
 	if id != int(req.ID) {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: "Check IDs in URL and body"}
+		return model.EmptyResponse{Success: false, Message: "ID mismatch"}
 	}
 
-	var post = model.Content{
+	post := model.Content{
 		ID:           req.ID,
 		Type:         model.ContentTypePost,
 		Title:        req.Title,
 		Text:         req.Text,
 		Abstract:     req.Abstract,
-		AuthorId:     req.AuthorID,
-		CreatedAt:    req.CreatedAt,
-		UpdatedAt:    req.UpdatedAt,
+		AuthorId:     req.AuthorId,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
-		Tags:         req.Tags,
-	}
-	if env, _ := model.GetSettingsItem("environment"); env.Value == model.EnvironmentDev {
-		c.Ctx.Application().Logger().Infof("更新文章 %+v", post)
 	}
 
 	err = c.Service.UpdatePost(post)
-
 	if err != nil {
-		c.Ctx.Application().Logger().Info(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.EmptyResponse{Success: false, Message: err.Error()}
 	}
 
-	c.Ctx.StatusCode(iris.StatusOK)
-	return model.Response{Success: true}
+	return model.EmptyResponse{Success: true, Message: "success"}
 }
 
-// func (c *PostController) Put(req model.PostRequest) model.Response {
-// 	var post = model.Content{
-// 		ID:           req.ID,
-// 		Type:         model.ContentTypePost,
-// 		Title:        req.Title,
-// 		Text:         req.Text,
-// 		Abstract:     req.Abstract,
-// 		AuthorId:     req.AuthorID,
-// 		IsPublic:     req.IsPublic,
-// 		PublishAt:    req.PublishAt,
-// 		Status:       req.Status,
-// 		AllowComment: req.AllowComment,
-// 	}
-
-// 	err := c.Service.UpdatePost(post)
-// 	if err != nil {
-// 		c.Ctx.Application().Logger().Info(err.Error())
-// 		c.Ctx.StatusCode(iris.StatusBadRequest)
-// 		return model.Response{Success: false, Message: err.Error()}
-// 	}
-
-// 	c.Ctx.StatusCode(iris.StatusOK)
-
-// 	return model.Response{
-// 		Success: true,
-// 	}
-// }
-
-// DeleteBy handles DELETE /api/v1/posts/{id1,id2,id3...:string}
-func (c *PostController) DeleteBy(idsReq string) model.Response {
-	// check request parameters
-	if len(idsReq) == 0 {
+// DeleteBy handles DELETE /api/v1/post/1,2,3 批量删除文章
+func (c *PostController) DeleteBy(idsReq string) model.BatchResponse {
+	if idsReq == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: true, Message: dict.ErrInvalidParameters.Error()}
+		return model.BatchResponse{Success: false, Message: "ids is empty"}
 	}
 
-	// convert request parameters from string("1,2,3") to array([1,2,3])
-	var ids []uint
-	idsString := strings.Split(idsReq, ",")
-	for _, item := range idsString {
-		if len(item) == 0 {
+	ids := strings.Split(idsReq, ",")
+	var successList []uint
+	var failedList []uint
+
+	for _, idStr := range ids {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			failedList = append(failedList, 0)
 			continue
 		}
-		id, err := strconv.Atoi(item)
+
+		err = c.Service.DeletePostByID(uint(id))
 		if err != nil {
-			c.Ctx.StatusCode(iris.StatusBadRequest)
-			return model.Response{Success: false, Message: err.Error()}
+			failedList = append(failedList, uint(id))
+		} else {
+			successList = append(successList, uint(id))
 		}
-		ids = append(ids, uint(id))
 	}
 
-	err := c.Service.DeletePostByIDs(ids)
-	if err != nil {
-		c.Ctx.StatusCode(400)
-		return model.Response{Message: err.Error()}
+	if len(successList) == 0 {
+		return model.NewBatchResponse(false, "删除失败", nil, failedList)
 	}
 
-	c.Ctx.StatusCode(200)
-	return model.Response{Success: true}
+	if len(failedList) > 0 {
+		return model.NewBatchResponse(false, "部分删除成功", successList, failedList)
+	}
+
+	return model.NewBatchResponse(true, "success", successList, nil)
 }
 
-// PostInit handles POST /api/v1/posts/init
-func (c *PostController) PostInit() iris.Map {
-	var json map[string]int
-	c.Ctx.ReadJSON(&json)
-
-	c.Ctx.Application().Logger().Info(json)
-
-	count := json["count"]
-	if count <= 0 {
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return iris.Map{"message": dict.ErrInvalidParameters}
-	}
-
-	c.Ctx.Application().Logger().Info("Init ", count, " posts")
-
-	for i := 0; i < count; i++ {
-
-		var tmp = model.Content{
-			Type:     model.ContentTypePost,
-			Title:    RandStringRunes(10),
-			Abstract: RandStringRunes(70),
-			Text:     RandStringRunes(200),
-			Author: model.User{
-				ID: 1,
-			},
+func (c *PostController) PostInit() model.EmptyResponse {
+	for i := 0; i < 10; i++ {
+		post := model.Content{
+			Type:         model.ContentTypePost,
+			Title:        fmt.Sprintf("Post %d", i),
+			Text:         fmt.Sprintf("This is post %d", i),
+			Abstract:     fmt.Sprintf("Abstract of post %d", i),
+			AuthorId:     1,
+			Status:       model.ContentStatusPublished,
 			AllowComment: true,
-			ViewsNum:     0,
-			CommentsNum:  0,
-		}
-		err := c.Service.InsertPost(tmp)
-		if err != nil {
-			c.Ctx.StatusCode(iris.StatusBadRequest)
-			return iris.Map{"message": err.Error()}
 		}
 
+		err := c.Service.InsertPost(post)
+		if err != nil {
+			return model.EmptyResponse{Success: false, Message: err.Error()}
+		}
 	}
 
-	c.Ctx.StatusCode(200)
-	return iris.Map{"message": "Success to init posts"}
+	return model.EmptyResponse{Success: true, Message: "success"}
 }

@@ -13,65 +13,103 @@ type UserController struct {
 	UserService service.UserService
 }
 
-func (c *UserController) Get(req model.QueryRequest) model.TestResponse {
+func (c *UserController) Get(req model.QueryRequest) model.PageResponse {
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
 		c.Ctx.Application().Logger().Info("request: pageIndex=", req.PageIndex, ",pageSize=", req.PageSize)
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.TestResponse{Success: false, Message: dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex"}
+		return model.NewPageResponse(
+			false,
+			dict.ErrInvalidParameters.Error()+": pageSize or pageIndex",
+			nil,
+			req.PageIndex,
+			req.PageSize,
+			0,
+		)
 	}
 
-	var rsp model.TestResponse
-	var page model.Page
+	// 获取总数
+	total := c.UserService.GetUserNum()
+	if total == 0 {
+		return model.NewPageResponse(
+			true,
+			"success",
+			[]model.User{},
+			req.PageIndex,
+			req.PageSize,
+			0,
+		)
+	}
 
-	page.ItemsCount = c.UserService.GetUserNum()
-	page.PageIndex = req.PageIndex
-	page.PageSize = req.PageSize
-	page.PageCount = page.ItemsCount/int64(req.PageSize) + 1
-
-	if int64(req.PageIndex) > page.PageCount {
+	// 检查页码
+	totalPages := total/int64(req.PageSize) + 1
+	if int64(req.PageIndex) > totalPages {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.TestResponse{Success: false, Message: "pageIndex too large"}
+		return model.NewPageResponse(
+			false,
+			"pageIndex too large",
+			nil,
+			req.PageIndex,
+			req.PageSize,
+			total,
+		)
 	}
 
+	// 设置默认排序
 	if len(req.Order) == 0 {
 		req.Order = "id asc"
 	}
-	page.Order = req.Order
 
+	// 获取用户列表
 	users, err := c.UserService.GetUsersWithOrder(req.PageIndex-1, req.PageSize, req.Order)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.TestResponse{Success: false, Message: err.Error()}
+		return model.NewPageResponse(
+			false,
+			err.Error(),
+			nil,
+			req.PageIndex,
+			req.PageSize,
+			total,
+		)
 	}
 
-	rsp.Data = users
-	rsp.Page = &page
-
-	rsp.Success = true
-
-	return rsp
-
+	return model.NewPageResponse(
+		true,
+		"success",
+		users,
+		req.PageIndex,
+		req.PageSize,
+		total,
+	)
 }
 
 // GetMe 获取当前登录用户信息
 // handle GET /api/v1/users/me
-func (c *UserController) GetMe() model.TestResponse {
+func (c *UserController) GetMe() model.DetailResponse {
 	// 从 JWT Claims 获取当前用户信息
 	claims := middleware.GetClaims(c.Ctx)
 	if claims == nil {
 		c.Ctx.StatusCode(iris.StatusUnauthorized)
-		return model.TestResponse{Success: false, Message: "未登录"}
+		return model.DetailResponse{
+			Success: false,
+			Message: "未登录",
+		}
 	}
 
 	// 获取用户信息
 	user, err := c.UserService.GetUserByID(int(claims.ID))
 	if err != nil {
-		c.Ctx.StatusCode(iris.StatusInternalServerError)
-		return model.TestResponse{Success: false, Message: err.Error()}
+		c.Ctx.Application().Logger().Error("Failed to get user info: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{
+			Success: false,
+			Message: err.Error(),
+		}
 	}
 
-	return model.TestResponse{
+	return model.DetailResponse{
 		Success: true,
+		Message: "success",
 		Data:    user,
 	}
 }

@@ -26,17 +26,10 @@ type postCommentRequest struct {
 	URL        string `json:"url"`
 	Text       string
 	IP         string `json:"ip"`
-	Agent      string `json:"agnet"`
+	Agent      string `json:"agent"`
 
 	ParentID  uint `json:"parentID"`
 	CreatedAt int  `json:"createdAt"`
-}
-
-type PostCommentResponse struct {
-	Success bool            `json:"success,omitempty"`
-	Message string          `json:"message,omitempty"`
-	Data    []model.Comment `json:"data,omitempty"`
-	Page    *model.Page     `json:"pagination,omitempty"`
 }
 
 type getCommentsRequest struct {
@@ -75,11 +68,11 @@ func checkComment(comment string) error {
 	return nil
 }
 
-func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
+func (c *CommentController) Post(req postCommentRequest) model.DetailResponse {
 	// 检查评论是否合规
-	if checkComment(req.Text) != nil {
+	if err := checkComment(req.Text); err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommentResponse{Success: false, Message: dict.ErrEmptyContent.Error()}
+		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
 	var comment = model.Comment{
@@ -98,7 +91,6 @@ func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 
 	// 如果是已登录用户，直接从数据库中获取用户信息
 	if comment.AuthorID != 0 {
-
 		user, err := c.UserService.GetUserByID(int(comment.AuthorID))
 		if err != nil {
 			c.Ctx.Application().Logger().Error("通过ID获取用户失败：", err.Error())
@@ -121,87 +113,96 @@ func (c *CommentController) Post(req postCommentRequest) PostCommentResponse {
 	if err := c.CommentService.InsertComment(comment); err != nil {
 		c.Ctx.Application().Logger().Error(err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return PostCommentResponse{Success: false, Message: err.Error()}
+		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-	return PostCommentResponse{Success: true}
+	return model.DetailResponse{Success: true, Message: "评论发表成功", Data: comment}
 }
 
-func (c *CommentController) Get(req getCommentsRequest) {
+func (c *CommentController) Get(req getCommentsRequest) model.PageResponse {
 	// 页码参数检查
 	if req.PageIndex <= 0 || req.PageSize <= 0 {
 		c.Ctx.Application().Logger().Error("Failed to get comments: pageIndex or pageSize <= 0")
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		c.Ctx.JSON(iris.Map{
-			"success": false,
-			"message": dict.ErrInvalidParameters.Error() + ": pageSize or pageIndex",
-		})
-
-		return
+		return model.NewPageResponse(false, dict.ErrInvalidParameters.Error()+": pageSize or pageIndex", nil, req.PageIndex, req.PageSize, 0)
 	}
+
+	var data []model.Comment
+	var totalCount int64
+	var err error
 
 	// 指定内容ID时，获取该内容下的评论
 	if req.ContentID != 0 {
-		data := c.CommentService.GetCommentsByContentID(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
-		var page model.Page
-		page.PageIndex = req.PageIndex
-		page.PageSize = len(data)
-		page.Order = req.Order
-		page.ItemsCount = c.CommentService.GetCommentsCount(int64(req.ContentID))
-
-		c.Ctx.StatusCode(iris.StatusOK)
-		c.Ctx.JSON(iris.Map{
-			"success":    true,
-			"data":       data,
-			"pagination": &page,
-		})
-
-		return
-
+		data, err = c.CommentService.GetCommentsByContentID(int(req.ContentID), req.PageIndex-1, req.PageSize, req.Order)
+		if err != nil {
+			c.Ctx.StatusCode(iris.StatusBadRequest)
+			return model.NewPageResponse(false, err.Error(), nil, req.PageIndex, req.PageSize, 0)
+		}
+		totalCount = c.CommentService.GetCommentsCount(int64(req.ContentID))
+	} else {
+		// 获取所有评论
+		switch req.WithContent {
+		case "title":
+			data, err = c.CommentService.GetCommentsWithContentTitle(req.PageIndex-1, req.PageSize, req.Order)
+		default:
+			data, err = c.CommentService.GetComments(req.PageIndex-1, req.PageSize, req.Order)
+		}
+		if err != nil {
+			c.Ctx.StatusCode(iris.StatusBadRequest)
+			return model.NewPageResponse(false, err.Error(), nil, req.PageIndex, req.PageSize, 0)
+		}
+		totalCount = c.CommentService.GetCommentsCount(0)
 	}
 
-	// 获取所有评论
-
-	var data []model.Comment
-	switch req.WithContent {
-	case "title":
-		data = c.CommentService.GetCommentsWithContentTitle(req.PageIndex-1, req.PageSize, req.Order)
-		break
-	default:
-
-		data = c.CommentService.GetComments(req.PageIndex-1, req.PageSize, req.Order)
-		break
-	}
-
-	var page model.Page
-
-	page.PageIndex = req.PageIndex
-	page.PageSize = len(data)
-	page.Order = req.Order
-	page.ItemsCount = c.CommentService.GetCommentsCount(0)
-
-	c.Ctx.StatusCode(iris.StatusOK)
-	c.Ctx.JSON(iris.Map{
-		"success":    true,
-		"data":       data,
-		"pagination": &page,
-	})
-
-	return
+	return model.NewPageResponse(true, "获取评论成功", data, req.PageIndex, req.PageSize, totalCount)
 }
 
 // PutBy Put handles PUT /api/v1/comments/{:id} 更新评论（完整）
-func (c *CommentController) PutBy(id uint) model.Response {
+func (c *CommentController) PutBy(id uint) model.DetailResponse {
 	var req postCommentRequest
 	if err := c.Ctx.ReadJSON(&req); err != nil {
 		c.Ctx.Application().Logger().Error("Failed to read json from PUT comments request: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
-	var comment = model.Comment{
-		ID:         id,
+	comment, err := c.CommentService.GetCommentByID(int(id))
+	if err != nil {
+		c.Ctx.Application().Logger().Error("Failed to get comment by id: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{Success: false, Message: err.Error()}
+	}
+
+	if err := c.CommentService.UpdateComment(comment); err != nil {
+		c.Ctx.Application().Logger().Error("Failed to update comment: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{Success: false, Message: err.Error()}
+	}
+
+	c.Ctx.StatusCode(iris.StatusOK)
+	return model.DetailResponse{Success: true, Message: "评论更新成功", Data: comment}
+}
+
+// PatchBy handles PATCH /api/v1/comments/{:id} 更新评论（指定字段）
+func (c *CommentController) PatchBy(id uint) model.DetailResponse {
+	var req postCommentRequest
+	if err := c.Ctx.ReadJSON(&req); err != nil {
+		c.Ctx.Application().Logger().Error("Failed to read json from PATCH comments request: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{Success: false, Message: err.Error()}
+	}
+
+	comment, err := c.CommentService.GetCommentByID(int(id))
+	if err != nil {
+		c.Ctx.Application().Logger().Error("Failed to get comment by id: ", err.Error())
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{Success: false, Message: err.Error()}
+	}
+
+	// 将非空字段复制到目标对象
+	replaceNonEmptyFields(&model.Comment{
+		ID:         req.ID,
 		ContentID:  req.ContentID,
 		AuthorID:   req.AuthorID,
 		AuthorName: req.AuthorName,
@@ -211,81 +212,61 @@ func (c *CommentController) PutBy(id uint) model.Response {
 		IP:         req.IP,
 		Agent:      req.Agent,
 		ParentID:   req.ParentID,
-	}
+	}, &comment)
+
 	if err := c.CommentService.UpdateComment(comment); err != nil {
-		return model.Response{Success: false, Message: err.Error()}
-	}
-
-	return model.Response{Success: true, Message: "Succeed to update comment"}
-}
-
-// PatchBy handles PATCH /api/v1/comments/{:id} 更新评论（指定字段）
-func (c *CommentController) PatchBy(id uint) model.Response {
-	var req model.Comment
-	if err := c.Ctx.ReadJSON(&req); err != nil {
-		c.Ctx.Application().Logger().Error("Failed to read json from PUT comments request: ", err.Error())
+		c.Ctx.Application().Logger().Error("Failed to update comment: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: err.Error()}
+		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
-	comment := c.CommentService.GetCommentByID(int(id))
-	if comment.ID == 0 {
-		c.Ctx.Application().Logger().Error("Comment doesn't exist, id = ", id)
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-		return model.Response{Success: false, Message: "Comment doesn't exist"}
-	}
-
-	replaceNonEmptyFields(&req, &comment)
-	c.CommentService.UpdateComment(comment)
-
-	return model.Response{Success: true, Message: "Succeed to update comment"}
+	c.Ctx.StatusCode(iris.StatusOK)
+	return model.DetailResponse{Success: true, Message: "评论更新成功", Data: comment}
 }
 
 // DeleteBy handles DELETE /api/v1/comments/{:ids_string} 删除评论
-// Request example: DELETE /api/v1/comments/1,2,3
-func (c *CommentController) DeleteBy(idsReq string) {
+func (c *CommentController) DeleteBy(idsReq string) model.BatchResponse {
 	if len(idsReq) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		c.Ctx.JSON(iris.Map{
-			"success": false,
-			"message": "参数错误",
-		})
-		return
+		return model.BatchResponse{Success: false, Message: "bad params in url"}
 	}
 
+	// 去掉末尾的逗号
+	if idsReq[len(idsReq)-1] == ',' {
+		idsReq = idsReq[:len(idsReq)-1]
+	}
+
+	// 将字符中的ID转换为数组
 	var ids []uint
-	idsStr := strings.Split(idsReq, ",")
-	for _, item := range idsStr {
+	str := strings.Split(idsReq, ",")
+	for _, item := range str {
 		if len(item) == 0 {
 			continue
 		}
 		id, err := strconv.Atoi(item)
 		if err != nil {
 			c.Ctx.StatusCode(iris.StatusBadRequest)
-			c.Ctx.JSON(iris.Map{
-				"success": false,
-				"message": err.Error(),
-			})
-			return
+			return model.BatchResponse{Success: false, Message: err.Error()}
 		}
 		ids = append(ids, uint(id))
 	}
 
-	cnt, err := c.CommentService.DeleteBatchComment(ids)
-	if err != nil {
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-		c.Ctx.JSON(iris.Map{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+	// 调用 Service 进行删除
+	var successList []uint
+	var failedList []uint
+
+	for _, id := range ids {
+		err := c.CommentService.DeleteComment(id)
+		if err != nil {
+			failedList = append(failedList, id)
+		} else {
+			successList = append(successList, id)
+		}
 	}
 
-	c.Ctx.StatusCode(iris.StatusOK)
-	c.Ctx.JSON(iris.Map{
-		"Success": true,
-		"Message": "成功删除" + strconv.Itoa(int(cnt)) + "条评论",
-	})
+	if len(failedList) > 0 {
+		return model.NewBatchResponse(false, "部分删除成功", successList, failedList)
+	}
 
-	return
+	return model.NewBatchResponse(true, "success", successList, nil)
 }
