@@ -55,11 +55,15 @@ func (c *Content) GetAuthor() User {
 }
 
 func (c *Content) GetAbstract() string {
-	if len(c.Abstract) == 0 {
-		return c.Text[0:140]
+	if len(c.Abstract) > 0 {
+		return c.Abstract
 	}
 
-	return c.Abstract
+	maxLen := 140
+	if len(c.Text) < maxLen {
+		return c.Text
+	}
+	return c.Text[0:maxLen]
 }
 
 func (c *Content) GetDate() string {
