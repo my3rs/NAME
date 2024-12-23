@@ -32,6 +32,13 @@ func initPostgres() {
 		panic("Failed to connect database")
 	}
 
+	// 创建 ltree 扩展
+	err = db.Exec("CREATE EXTENSION IF NOT EXISTS ltree").Error
+	if err != nil {
+		panic("Failed to create ltree extension")
+	}
+
+	// 迁移数据库
 	err = db.AutoMigrate(
 		&model.Attachment{},
 		&model.Comment{},
