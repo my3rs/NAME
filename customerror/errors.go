@@ -6,10 +6,13 @@ import "fmt"
 type ErrorType string
 
 const (
-	ErrorTypeValidation ErrorType = "VALIDATION"
-	ErrorTypeNotFound   ErrorType = "NOT_FOUND"
-	ErrorTypeDatabase   ErrorType = "DATABASE"
-	ErrorTypeUnexpected ErrorType = "UNEXPECTED"
+	ErrorTypeValidation   ErrorType = "VALIDATION"
+	ErrorTypeNotFound     ErrorType = "NOT_FOUND"
+	ErrorTypeDatabase     ErrorType = "DATABASE"
+	ErrorTypeUnexpected   ErrorType = "UNEXPECTED"
+	ErrorTypeJWTExpired   ErrorType = "JWT_EXPIRED"
+	ErrorTypeJWTInvalid   ErrorType = "JWT_INVALID"
+	ErrorTypeJWTMalformed ErrorType = "JWT_MALFORMED"
 )
 
 // CustomError 自定义错误结构
@@ -46,5 +49,26 @@ func NewDatabaseError(message string, err error) error {
 		Type:    ErrorTypeDatabase,
 		Message: message,
 		Err:     err,
+	}
+}
+
+func NewJWTExpiredError() error {
+	return &CustomError{
+		Type:    ErrorTypeJWTExpired,
+		Message: "token has expired",
+	}
+}
+
+func NewJWTInvalidError() error {
+	return &CustomError{
+		Type:    ErrorTypeJWTInvalid,
+		Message: "token is invalid",
+	}
+}
+
+func NewJWTMalformedError() error {
+	return &CustomError{
+		Type:    ErrorTypeJWTMalformed,
+		Message: "token is malformed",
 	}
 }

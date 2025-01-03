@@ -3,28 +3,39 @@ package database
 import (
 	"NAME/conf"
 	"NAME/model"
-	"log"
 	"strings"
 	"sync"
+
+	"fmt"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var (
-	once sync.Once
 	db   *gorm.DB
+	once sync.Once
 )
 
-func initPostgres() {
+// GetDB returns the database instance
+func GetDB() *gorm.DB {
+	once.Do(initPostgres)
+	return db
+}
 
-	// dsn example : host=127.0.0.1 user=postgres password=postgres dbname=nuwa post=5432
-	dsn := "host=" + strings.Split(conf.Config().DB.Host, ":")[0] +
-		" user=" + conf.Config().DB.User +
-		" password= " + conf.Config().DB.Password +
-		" dbname=" + conf.Config().DB.Name +
-		" port=" + strings.Split(conf.Config().DB.Host, ":")[1] +
-		" sslmode=disable TimeZone=Asia/Shanghai"
+// SetDB sets the database instance (for testing)
+func SetDB(instance *gorm.DB) {
+	db = instance
+}
+
+func initPostgres() {
+	config := conf.GetConfig()
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
+		config.Database.Host,
+		config.Database.Port,
+		config.Database.User,
+		config.Database.Password,
+		config.Database.Name)
 
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -49,14 +60,24 @@ func initPostgres() {
 		&model.Category{},
 	)
 	if err != nil {
-		log.Println("数据库迁移失败：", err)
+		panic("Failed to migrate database")
 	}
 }
 
-func GetDB() *gorm.DB {
+// UpdateSequence updates the sequence of a table
+func UpdateSequence(tableName string) error {
 	if db == nil {
-		panic("数据库连接为 nil")
+		return fmt.Errorf("database not initialized")
 	}
 
-	return db
+	// Get the current maximum ID
+	var maxID uint
+	result := db.Table(tableName).Select("COALESCE(MAX(id), 0)").Scan(&maxID)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Update the sequence
+	seqName := strings.ToLower(tableName) + "_id_seq"
+	return db.Exec(fmt.Sprintf("SELECT setval('%s', %d)", seqName, maxID)).Error
 }

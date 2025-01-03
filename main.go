@@ -34,11 +34,11 @@ func main() {
 	route.InitRoute(app)
 
 	app.HandleDir("/assets", "./web/assets")
-	app.HandleDir("/uploads", conf.Config().DataPath+"/uploads")
+	app.HandleDir("/uploads", conf.GetConfig().DataPath+"/uploads")
 
 	// Listens and serves incoming http requests
 	// on http://localhost:8000.
-	app.Listen(":" + strconv.Itoa(conf.Config().Port))
+	app.Listen(":" + strconv.Itoa(conf.GetConfig().Port))
 }
 
 func logMiddleware(ctx iris.Context) {

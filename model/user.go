@@ -7,6 +7,10 @@ const (
 	UserRoleReader UserRole = "reader"
 )
 
+func (u UserRole) String() string {
+	return string(u)
+}
+
 type User struct {
 	ID             uint     `gorm:"primaryKey" json:"id"`
 	Name           string   `gorm:"unique" json:"name"`

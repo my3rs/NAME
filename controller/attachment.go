@@ -4,12 +4,13 @@ import (
 	"NAME/conf"
 	"NAME/model"
 	"NAME/service"
-	"github.com/kataras/iris/v12"
 	"log"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/kataras/iris/v12"
 )
 
 type AttachmentController struct {
@@ -18,7 +19,7 @@ type AttachmentController struct {
 }
 
 func (c *AttachmentController) Post() {
-	c.Ctx.SetMaxRequestBodySize(conf.MaxBodySize)
+	c.Ctx.SetMaxRequestBodySize(conf.GetConfig().MaxBodySize)
 
 	// 从请求中读取文件
 	_, fileHeader, err := c.Ctx.FormFile("file")
@@ -52,7 +53,7 @@ func (c *AttachmentController) Post() {
 
 	// 保存文件
 	today := time.Now().Format("2006-01")
-	dest := conf.Config().DataPath + "/uploads/" + today
+	dest := conf.GetConfig().DataPath + "/uploads/" + today
 
 	os.Mkdir(dest, 0700)
 	_, err = c.Ctx.SaveFormFile(fileHeader, dest+fileHeader.Filename)

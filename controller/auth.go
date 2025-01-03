@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"NAME/middleware"
+	"NAME/auth"
 	"NAME/model"
 	"NAME/service"
 
@@ -84,75 +84,81 @@ func trimQuotes(s string) string {
 
 // PostLoginBy handles POST: https://localhost/api/v1/auth/login/:username
 func (c *AuthController) PostLoginBy(username string) loginResponse {
-	// Read json from request body
 	var json LoginJSON
 	if err := c.Ctx.ReadJSON(&json); err != nil {
-		c.Ctx.Application().Logger().Infof("Failed to read json from request: ", err.Error())
-		c.Ctx.StatusCode(400)
+		c.Ctx.Application().Logger().Infof("Failed to read json from request: %s", err.Error())
 		return loginResponse{
 			Success: false,
 			Message: err.Error(),
 		}
 	}
 
-	// Check `username` in URL and request body
-	if json.Username != username {
-		c.Ctx.Application().Logger().Infof("usernames in URL and body doesn't match: %s %s",
-			username, json.Username)
-		c.Ctx.StatusCode(400)
-		c.Ctx.JSON(iris.Map{"message": "usernames in URL and body doesn't match"})
+	user, err := c.UserService.GetUserByName(username)
+	if err != nil {
 		return loginResponse{
 			Success:           false,
-			Message:           "usernames in URL and body don't match",
+			Message:           "Invalid username or password",
 			IsUsernameInvalid: true,
 		}
 	}
 
-	// read `User` from database
-	user, err := c.UserService.GetUserByName(json.Username)
-	if err != nil {
-		c.Ctx.StatusCode(iris.StatusBadRequest)
-
+	if err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(json.Password)); err != nil {
 		return loginResponse{
-			Success: false,
-			Message: err.Error(),
+			Success:           false,
+			Message:           "Invalid username or password",
+			IsPasswordInvalid: true,
 		}
 	}
 
-	err = c.UserService.VerifyPassword(user, json.Password)
+	tokenPair, err := auth.GetJWTService().GenerateTokenPair(user)
 	if err != nil {
 		return loginResponse{
 			Success: false,
-			Message: err.Error(),
+			Message: "Failed to generate token",
 		}
 	}
 
-	var pair jwt.TokenPair
-	pair, err = middleware.GenerateTokenPair(user)
-	if err != nil {
-		return loginResponse{
-			Success: false,
-			Message: err.Error(),
-		}
-	}
-
-	c.Ctx.StatusCode(200)
-	c.Ctx.Header("authorization", trimQuotes(string(pair.AccessToken)))
-	c.Ctx.Header("refresh-token", trimQuotes(string(pair.RefreshToken)))
+	c.Ctx.Header("Authorization", "Bearer "+string(tokenPair.AccessToken))
+	c.Ctx.Header("X-Refresh-Token", string(tokenPair.RefreshToken))
 
 	return loginResponse{
-		Success:           true,
-		IsUsernameInvalid: false,
-		IsPasswordInvalid: false,
-		Message:           "login success: check tokens in the HTTP header",
+		Success: true,
+		Message: "Login successful",
 	}
 }
 
 // PostRefresh handles POST: https://localhost/api/v1/auth/refresh
-// @func: verify the refresh token and then generate a new token pair,
-// both access token and refresh token
 func (c *AuthController) PostRefresh() {
-	middleware.RefreshToken(c.Ctx)
+	refreshToken := auth.GetJWTService().GetTokenFromHeader(c.Ctx, auth.TypeRefreshToken)
+	claims, err := auth.GetJWTService().VerifyToken(refreshToken)
+	if err != nil {
+		c.Ctx.StopWithJSON(401, iris.Map{
+			"message": "Invalid refresh token",
+		})
+		return
+	}
+
+	user, err := c.UserService.GetUserByName(claims.Username)
+	if err != nil {
+		c.Ctx.StopWithJSON(401, iris.Map{
+			"message": "User not found",
+		})
+		return
+	}
+
+	tokenPair, err := auth.GetJWTService().GenerateTokenPair(user)
+	if err != nil {
+		c.Ctx.StopWithJSON(500, iris.Map{
+			"message": "Failed to generate token pair",
+		})
+		return
+	}
+
+	c.Ctx.Header("Authorization", "Bearer "+string(tokenPair.AccessToken))
+	c.Ctx.Header("X-Refresh-Token", string(tokenPair.RefreshToken))
+	c.Ctx.JSON(iris.Map{
+		"message": "Token refreshed successfully",
+	})
 }
 
 // HashAndSalt : Generate hashed password

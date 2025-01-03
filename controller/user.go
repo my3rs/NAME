@@ -1,10 +1,11 @@
 package controller
 
 import (
+	"NAME/auth"
 	"NAME/dict"
-	"NAME/middleware"
 	"NAME/model"
 	"NAME/service"
+
 	"github.com/kataras/iris/v12"
 )
 
@@ -87,7 +88,7 @@ func (c *UserController) Get(req model.QueryRequest) model.PageResponse {
 // handle GET /api/v1/users/me
 func (c *UserController) GetMe() model.DetailResponse {
 	// 从 JWT Claims 获取当前用户信息
-	claims := middleware.GetClaims(c.Ctx)
+	claims := auth.GetJWTService().GetClaimsFromContext(c.Ctx)
 	if claims == nil {
 		c.Ctx.StatusCode(iris.StatusUnauthorized)
 		return model.DetailResponse{
