@@ -5,6 +5,7 @@ import (
 	"NAME/model"
 
 	"gorm.io/gorm"
+	"strconv"
 )
 
 type CommentService interface {
@@ -30,13 +31,6 @@ type commentService struct {
 	DB *gorm.DB
 }
 
-const queryCommentByContentID = `SELECT *
-FROM comments 
-WHERE path <@ ARRAY(
-	(SELECT id::VARCHAR FROM comments WHERE content_id = ? AND status = ? LIMIT ? OFFSET ?)
-)::ltree[];
-`
-
 func NewCommentService() CommentService {
 	db := database.GetDB()
 
@@ -44,22 +38,58 @@ func NewCommentService() CommentService {
 }
 
 func (s *commentService) InsertComment(comment model.Comment) error {
-	if result := s.DB.Create(&comment); result.Error != nil {
-		return result.Error
+	// 如果有父评论，构建新评论的路径
+	if comment.ParentID != 0 {
+		var parentComment model.Comment
+		if err := s.DB.First(&parentComment, comment.ParentID).Error; err != nil {
+			return err
+		}
+		// 父评论的路径加上当前评论的ID
+		comment.Path = parentComment.Path
 	}
 
-	return nil
+	// 创建评论
+	if err := s.DB.Create(&comment).Error; err != nil {
+		return err
+	}
+
+	// 更新评论的路径
+	// 如果是根评论，路径就是自己的ID
+	// 如果是子评论，路径是父评论的路径加上自己的ID
+	if comment.ParentID == 0 {
+		comment.Path = strconv.FormatUint(uint64(comment.ID), 10)
+	} else {
+		comment.Path = comment.Path + "." + strconv.FormatUint(uint64(comment.ID), 10)
+	}
+
+	// 更新路径
+	return s.DB.Model(&comment).Update("path", comment.Path).Error
 }
 
 func (s *commentService) GetCommentsByContentID(contentID int, pageIndex int, pageSize int, order string) ([]model.Comment, error) {
 	var comments []model.Comment
-	if result := s.DB.Where("content_id = ?", contentID).
-		Offset(pageIndex * pageSize).
+	offset := pageIndex * pageSize
+
+	// 先获取根评论
+	if err := s.DB.Where("content_id = ? AND parent_id = 0", contentID).
+		Offset(offset).
 		Limit(pageSize).
 		Order(order).
-		Find(&comments); result.Error != nil {
-		return nil, result.Error
+		Find(&comments).Error; err != nil {
+		return nil, err
 	}
+
+	// 对于每个根评论，获取其所有子评论
+	for i := range comments {
+		var children []model.Comment
+		if err := s.DB.Where("content_id = ? AND path LIKE ?", contentID, comments[i].Path+"_%").
+			Order(order).
+			Find(&children).Error; err != nil {
+			return nil, err
+		}
+		comments[i].Children = children
+	}
+
 	return comments, nil
 }
 

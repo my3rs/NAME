@@ -8,36 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-const sqlGetTagsWithPath = `
-SELECT tag1.id,tag1.no,tag1.parent_id,tag1.text, tag1.path, array_to_string(array_agg(tag2.text ORDER BY tag2.path), ' / ') As readable_path
-FROM public.tags As tag1 
-INNER JOIN public.tags As tag2 ON (tag2.path @> tag1.path)
-GROUP BY tag1.id, tag1.path, tag1.text
-ORDER BY readable_path;
-`
-
-const sqlGetTagByIDWithReadablePath = `SELECT 
-  array_to_string(array_agg(tag2.text ORDER BY tag2.path), ' / ') AS text
-FROM 
-  public.tags AS tag1 
-INNER JOIN 
-  public.tags AS tag2 ON (tag2.path @> tag1.path)
-WHERE 
-  tag1.id = ?
-GROUP BY 
-  tag1.id, tag1.path, tag1.text;
-`
-
 type TagService interface {
 	// 查
 	GetTagByID(id uint) (model.Tag, error)
-	GetAllTags() []model.TagExt
-	GetAllTagsWithPath() []model.TagExt
+	GetAllTags() []model.Tag
 	GetTagsWithOrder(pageIndex int, pageSize int, order string) ([]model.Tag, error)
 	GetTagsCount() int64
-
-	GetTagByIDWithReadablePath(id uint) (model.Tag, error)
-	GetTagReadablePath(id uint) string
 
 	// GetMetadata 查看标签的统计信息
 	GetMetadata() iris.Map
@@ -70,28 +46,11 @@ func (s *tagService) GetTagByID(id uint) (model.Tag, error) {
 	return tag, nil
 }
 
-func (s *tagService) GetAllTags() []model.TagExt {
+func (s *tagService) GetAllTags() []model.Tag {
 	var tags []model.Tag
 	if result := s.DB.Order("path").Find(&tags); result.Error != nil {
-		return []model.TagExt{}
+		return []model.Tag{}
 	}
-
-	// 将 Tag 数组转换为 TagExt 数组
-	tagExts := make([]model.TagExt, len(tags))
-	for i, tag := range tags {
-		tagExts[i] = model.TagExt{
-			Tag: tag,
-			// 如果需要，可以在这里设置 ReadablePath
-			// ReadablePath: 计算可读路径的逻辑
-		}
-	}
-
-	return tagExts
-}
-
-func (s *tagService) GetAllTagsWithPath() []model.TagExt {
-	var tags []model.TagExt
-	s.DB.Raw(sqlGetTagsWithPath).Scan(&tags)
 
 	return tags
 }
@@ -112,19 +71,6 @@ func (s *tagService) GetTagsCount() int64 {
 	s.DB.Model(&model.Tag{}).Count(&count)
 
 	return count
-}
-
-func (s *tagService) GetTagByIDWithReadablePath(id uint) (model.Tag, error) {
-	var result model.Tag
-	s.DB.Raw(sqlGetTagByIDWithReadablePath, id).Scan(&result)
-
-	return result, nil
-}
-
-func (s *tagService) GetTagReadablePath(id uint) string {
-	var path string
-	s.DB.Raw(sqlGetTagByIDWithReadablePath, id).Scan(&path)
-	return path
 }
 
 func (s *tagService) GetMetadata() iris.Map {
