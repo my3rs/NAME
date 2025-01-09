@@ -17,21 +17,6 @@ type CommentController struct {
 	UserService    service.UserService
 }
 
-type postCommentRequest struct {
-	ID         uint   `json:"id"`
-	ContentID  uint   `json:"contentID"`
-	AuthorID   uint   `json:"authorID"`
-	AuthorName string `json:"authorName"`
-	Mail       string
-	URL        string `json:"url"`
-	Text       string
-	IP         string `json:"ip"`
-	Agent      string `json:"agent"`
-
-	ParentID  uint `json:"parentID"`
-	CreatedAt int  `json:"createdAt"`
-}
-
 type getCommentsRequest struct {
 	PageSize    int    `url:"pageSize" json:"pageSize"`
 	PageIndex   int    `url:"pageIndex" json:"pageIndex"`
@@ -68,7 +53,7 @@ func checkComment(comment string) error {
 	return nil
 }
 
-func (c *CommentController) Post(req postCommentRequest) model.DetailResponse {
+func (c *CommentController) Post(req model.Comment) model.DetailResponse {
 	// 检查评论是否合规
 	if err := checkComment(req.Text); err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -160,7 +145,7 @@ func (c *CommentController) Get(req getCommentsRequest) model.PageResponse {
 
 // PutBy Put handles PUT /api/v1/comments/{:id} 更新评论（完整）
 func (c *CommentController) PutBy(id uint) model.DetailResponse {
-	var req postCommentRequest
+	var req model.Comment
 	if err := c.Ctx.ReadJSON(&req); err != nil {
 		c.Ctx.Application().Logger().Error("Failed to read json from PUT comments request: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -186,7 +171,7 @@ func (c *CommentController) PutBy(id uint) model.DetailResponse {
 
 // PatchBy handles PATCH /api/v1/comments/{:id} 更新评论（指定字段）
 func (c *CommentController) PatchBy(id uint) model.DetailResponse {
-	var req postCommentRequest
+	var req model.Comment
 	if err := c.Ctx.ReadJSON(&req); err != nil {
 		c.Ctx.Application().Logger().Error("Failed to read json from PATCH comments request: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)

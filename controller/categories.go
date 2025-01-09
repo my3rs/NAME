@@ -15,12 +15,6 @@ type CategoryController struct {
 	UserService     service.UserService
 }
 
-type postRequest struct {
-	ID   uint   `json:"id"`
-	Text string `json:"text"`
-	No   string `json:"no"`
-}
-
 func (c *CategoryController) Get(req model.QueryRequest) model.PageResponse {
 	// 检查请求参数
 	if req.PageSize <= 0 || req.PageIndex <= 0 {
@@ -45,7 +39,7 @@ func (c *CategoryController) Get(req model.QueryRequest) model.PageResponse {
 	return model.NewPageResponse(true, "success", items, req.PageIndex, req.PageSize, total)
 }
 
-func (c *CategoryController) Post(req postRequest) model.EmptyResponse {
+func (c *CategoryController) Post(req model.Category) model.EmptyResponse {
 	if req.Text == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.EmptyResponse{Success: false, Message: "text cannot be empty"}
@@ -76,7 +70,7 @@ func (c *CategoryController) PutBy(id int) model.EmptyResponse {
 		return model.EmptyResponse{Success: false, Message: "无效ID"}
 	}
 
-	var req postRequest
+	var req model.Category
 	err := c.Ctx.ReadJSON(&req)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusBadRequest)

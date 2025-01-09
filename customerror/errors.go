@@ -11,8 +11,14 @@ const (
 	ErrorTypeDatabase     ErrorType = "DATABASE"
 	ErrorTypeUnexpected   ErrorType = "UNEXPECTED"
 	ErrorTypeJWTExpired   ErrorType = "JWT_EXPIRED"
+	ErrorTypeJWTFormat    ErrorType = "JWT_FORMAT"
 	ErrorTypeJWTInvalid   ErrorType = "JWT_INVALID"
 	ErrorTypeJWTMalformed ErrorType = "JWT_MALFORMED"
+	ErrorTypeAuth         ErrorType = "AUTH"
+)
+
+const (
+	ErrorMessageAuth = "wrong username or password"
 )
 
 // CustomError 自定义错误结构
@@ -59,10 +65,10 @@ func NewJWTExpiredError() error {
 	}
 }
 
-func NewJWTInvalidError() error {
+func NewJWTInvalidError(message string) error {
 	return &CustomError{
 		Type:    ErrorTypeJWTInvalid,
-		Message: "token is invalid",
+		Message: message,
 	}
 }
 
@@ -70,5 +76,19 @@ func NewJWTMalformedError() error {
 	return &CustomError{
 		Type:    ErrorTypeJWTMalformed,
 		Message: "token is malformed",
+	}
+}
+
+func NewAuthError(message string) error {
+	return &CustomError{
+		Type:    ErrorTypeAuth,
+		Message: message,
+	}
+}
+
+func NewJWTFormatError(message string) error {
+	return &CustomError{
+		Type:    ErrorTypeJWTFormat,
+		Message: message,
 	}
 }

@@ -5,7 +5,7 @@ type Category struct {
 	Text string `json:"text"`
 	No   string `json:"no"`
 
-	CreatedAt int `json:"createdAt"  gorm:"autoCreateTime"`
+	CreatedAt int `json:"createdAt,omitempty"  gorm:"autoCreateTime"`
 }
 
 func (Category) TableName() string {

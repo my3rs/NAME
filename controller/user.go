@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"NAME/auth"
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
@@ -88,17 +87,18 @@ func (c *UserController) Get(req model.QueryRequest) model.PageResponse {
 // handle GET /api/v1/users/me
 func (c *UserController) GetMe() model.DetailResponse {
 	// 从 JWT Claims 获取当前用户信息
-	claims := auth.GetJWTService().GetClaimsFromContext(c.Ctx)
-	if claims == nil {
+	claims, err := service.GetJWTService().GetClaimsFromContext(c.Ctx)
+	if err != nil {
 		c.Ctx.StatusCode(iris.StatusUnauthorized)
+		c.Ctx.JSON(iris.Map{"message": err.Error()})
 		return model.DetailResponse{
 			Success: false,
-			Message: "未登录",
+			Message: err.Error(),
 		}
 	}
 
 	// 获取用户信息
-	user, err := c.UserService.GetUserByID(int(claims.ID))
+	user, err := c.UserService.GetUserByName(claims.Subject)
 	if err != nil {
 		c.Ctx.Application().Logger().Error("Failed to get user info: ", err.Error())
 		c.Ctx.StatusCode(iris.StatusBadRequest)
@@ -112,5 +112,44 @@ func (c *UserController) GetMe() model.DetailResponse {
 		Success: true,
 		Message: "success",
 		Data:    user,
+	}
+}
+
+// Post 处理用户注册
+// handle POST /api/v1/users
+func (c *UserController) Post(user model.User) model.DetailResponse {
+	// 验证必要的请求参数
+	if user.Username == "" || user.Password == "" || user.Mail == "" {
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.DetailResponse{
+			Success: false,
+			Message: dict.ErrInvalidParameters.Error() + ": username, password and mail are required",
+		}
+	}
+
+	// 加密密码
+	user.HashedPassword = HashAndSalt([]byte(user.Password))
+
+	// 设置默认值
+	user.Role = model.UserRoleReader
+	user.Activated = false
+
+	// 调用服务层创建用户
+	err := c.UserService.InsertUser(user)
+	if err != nil {
+		c.Ctx.StatusCode(iris.StatusInternalServerError)
+		return model.DetailResponse{
+			Success: false,
+			Message: "Failed to create user: " + err.Error(),
+		}
+	}
+
+	newUser, err := c.UserService.GetUserByName(user.Username)
+
+	// 返回成功响应
+	return model.DetailResponse{
+		Success: true,
+		Message: "User registered successfully",
+		Data:    newUser,
 	}
 }

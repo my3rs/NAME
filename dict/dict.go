@@ -4,6 +4,14 @@ import "errors"
 
 type Dict string
 
+// TokenType represents different types of JWT tokens
+type TokenType int
+
+const (
+	TypeAccessToken TokenType = iota
+	TypeRefreshToken
+)
+
 const (
 	StatusSuccess Dict = "success"
 	StatusFailed  Dict = "failed"

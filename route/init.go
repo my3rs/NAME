@@ -1,10 +1,10 @@
 package route
 
 import (
-	"NAME/auth"
 	"NAME/conf"
 	"NAME/controller"
 	"NAME/database"
+	"NAME/middleware"
 	"NAME/model"
 	"NAME/service"
 
@@ -45,9 +45,8 @@ func InitRoute(app *iris.Application) {
 
 	// 附件
 	attachments := app.Party("/api/v1/attachments")
-	if conf.GetConfig().Mode == conf.PROD {
-		attachments.Use(auth.JWTMiddleware())
-	}
+	attachments.Use(middleware.JWT)
+
 	mvc.Configure(attachments, func(app *mvc.Application) {
 		app.Register(
 			database.GetDB,
@@ -61,16 +60,14 @@ func InitRoute(app *iris.Application) {
 	// 所有人都可以向 /api/API_VERSION/posts 发送GET请求
 	jwtFilter := func(ctx iris.Context) bool {
 		if method := ctx.Method(); method == iris.MethodGet {
-			ctx.Next()
+			return false
 		}
 		return true
 	}
-	jwtMiddleware := iris.NewConditionalHandler(jwtFilter, auth.JWTMiddleware())
+	jwtMiddleware := iris.NewConditionalHandler(jwtFilter, middleware.JWT)
 
-	posts := app.Party("/api/v1/posts")
-	if conf.GetConfig().Mode == conf.PROD {
-		posts.Use(jwtMiddleware)
-	}
+	posts := app.Party("/api/v1/posts", jwtMiddleware)
+
 	mvc.Configure(posts, func(application *mvc.Application) {
 		application.Register(
 			database.GetDB,
@@ -101,19 +98,23 @@ func InitRoute(app *iris.Application) {
 	})
 
 	pages := app.Party("/api/v1/pages")
-	if conf.GetConfig().Mode == conf.PROD {
-		pages.Use(auth.JWTMiddleware())
-	}
+	pages.Use(middleware.JWT)
+
 	mvc.Configure(pages, func(application *mvc.Application) {
 		application.Handle(new(controller.PageController))
 	})
 
 	// 用户
-	users := app.Party("/api/v1/users")
-	if conf.GetConfig().Mode == conf.PROD {
-		users.Use(auth.JWTMiddleware())
-
+	filterForUser := func(ctx iris.Context) bool {
+		// 用户注册时跳过JWT验证
+		if method := ctx.Method(); method == iris.MethodPost {
+			return false
+		}
+		return true
 	}
+	jwtMiddlewareForUser := iris.NewConditionalHandler(filterForUser, middleware.JWT)
+
+	users := app.Party("/api/v1/users", jwtMiddlewareForUser)
 	mvc.Configure(users, func(application *mvc.Application) {
 		application.Register(
 			database.GetDB,
@@ -125,7 +126,7 @@ func InitRoute(app *iris.Application) {
 	// 设置
 	settings := app.Party("/api/v1/settings")
 	if env, found := model.GetSettingsItem("environment"); found && env.Value == model.EnvironmentProd {
-		settings.Use(auth.JWTMiddleware())
+		settings.Use(middleware.JWT)
 	}
 	mvc.Configure(settings, func(app *mvc.Application) {
 		app.Register(

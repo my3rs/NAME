@@ -29,4 +29,7 @@ type User struct {
 
 // Claims is a custom JWT claims struct.
 
-type Claims jwt.Claims
+type Claims struct {
+	jwt.Claims
+	Role UserRole `json:"role"`
+}

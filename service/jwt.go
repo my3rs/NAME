@@ -67,10 +67,13 @@ func (s *JWTService) GenerateTokenPair(user model.User) (jwt.TokenPair, error) {
 
 	// Create access claims with user details
 	accessClaims := model.Claims{
-		Subject:  fmt.Sprintf("%s", user.Username),
-		Issuer:   "NAME",
-		IssuedAt: now.Unix(),
-		Expiry:   now.Add(time.Second * s.config.AccessTokenMaxAge).Unix(),
+		Claims: jwt.Claims{
+			Subject:  fmt.Sprintf("%s", user.Username),
+			Issuer:   "NAME",
+			IssuedAt: now.Unix(),
+			Expiry:   now.Add(time.Second * s.config.AccessTokenMaxAge).Unix(),
+		},
+		Role: user.Role,
 	}
 
 	tokenPair, err := s.signer.NewTokenPair(accessClaims, refreshClaims, s.config.RefreshTokenMaxAge)

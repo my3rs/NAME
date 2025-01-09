@@ -13,9 +13,8 @@ type getTagsRequest struct {
 }
 
 type newTagRequest struct {
-	No       string `json:"no"`
-	Text     string `json:"text"`
-	ParentID uint   `json:"parentID"`
+	No   string `json:"no"`
+	Text string `json:"text"`
 }
 
 type TagController struct {
@@ -24,15 +23,10 @@ type TagController struct {
 }
 
 func (c *TagController) Get(request getTagsRequest) iris.Map {
-	var tags []model.TagExt
+	var tags []model.Tag
 
-	if request.Path != "" {
-		tags = c.Service.GetAllTagsWithPath()
-		c.Ctx.StatusCode(iris.StatusOK)
-	} else {
-		tags = c.Service.GetAllTags()
-		c.Ctx.StatusCode(iris.StatusOK)
-	}
+	tags = c.Service.GetAllTags()
+	c.Ctx.StatusCode(iris.StatusOK)
 
 	return iris.Map{
 		"success": true,
@@ -42,9 +36,8 @@ func (c *TagController) Get(request getTagsRequest) iris.Map {
 
 func (c *TagController) Post(req newTagRequest) {
 	var tag = model.Tag{
-		No:       req.No,
-		Text:     req.Text,
-		ParentID: req.ParentID,
+		No:   req.No,
+		Text: req.Text,
 	}
 
 	err := c.Service.InsertTag(tag)

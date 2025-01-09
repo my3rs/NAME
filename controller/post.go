@@ -23,20 +23,6 @@ type PostController struct {
 	CategoryService service.CategoryService
 }
 
-type postContentRequest struct {
-	Title        string              `json:"title"`
-	Abstract     string              `json:"abstract"`
-	Text         string              `json:"text"`
-	Author       model.User          `json:"author"`
-	Category     model.Category      `json:"category"`
-	Status       model.ContentStatus `json:"status"`
-	CreatedAt    int64               `json:"createdAt"`
-	UpdatedAt    int64               `json:"updatedAt"`
-	PublishAt    int64               `json:"publishAt"`
-	AllowComment bool                `json:"allowComment"`
-	Tags         []model.Tag         `json:"tags"`
-}
-
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func RandStringRunes(n int) string {
@@ -109,26 +95,10 @@ func (c *PostController) GetBy(id int) model.DetailResponse {
 		return model.DetailResponse{Success: false, Message: err.Error()}
 	}
 
-	readablePath, err := strconv.ParseBool(c.Ctx.URLParam("readablePath"))
-	if err != nil {
-		readablePath = false
-	}
-
-	if readablePath {
-		debug, found := model.GetSettingsItem("environment")
-		if debug.Value == model.EnvironmentDev || !found {
-			c.Ctx.Application().Logger().Info("查找标签的可读化路径")
-		}
-
-		for i, tag := range post.Tags {
-			post.Tags[i].Text = c.TagService.GetTagReadablePath(tag.ID)
-		}
-	}
-
 	return model.DetailResponse{Success: true, Message: "success", Data: post}
 }
 
-func (c *PostController) Post(req postContentRequest) model.EmptyResponse {
+func (c *PostController) Post(req model.Content) model.EmptyResponse {
 	var post = model.Content{
 		Type:         model.ContentTypePost,
 		Title:        req.Title,
