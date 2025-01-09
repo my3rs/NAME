@@ -6,9 +6,8 @@ import (
 
 // BaseResponse 基础响应结构
 type BaseResponse struct {
-	Success bool        `json:"success"`        // 响应成功
-	Message string      `json:"message"`        // 响应信息
-	Data    interface{} `json:"data,omitempty"` // 响应数据
+	Success bool   `json:"success"` // 响应成功
+	Message string `json:"message"` // 响应信息
 }
 
 // PageInfo 分页信息
@@ -64,11 +63,10 @@ type StatusResponse struct {
 }
 
 // NewResponse 创建基础响应
-func NewResponse(success bool, message string, data interface{}) BaseResponse {
+func NewResponse(success bool, message string) BaseResponse {
 	return BaseResponse{
 		Success: success,
 		Message: message,
-		Data:    data,
 	}
 }
 
@@ -106,5 +104,14 @@ func NewBatchResponse(success bool, message string, successList []uint, failedLi
 		Message:     message,
 		SuccessList: successList,
 		FailedList:  failedList,
+	}
+}
+
+// NewDetailResponse 创建详情响应
+func NewDetailResponse(success bool, message string, data interface{}) DetailResponse {
+	return DetailResponse{
+		Success: success,
+		Message: message,
+		Data:    data,
 	}
 }

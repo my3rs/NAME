@@ -3,32 +3,13 @@ package database
 import (
 	"NAME/conf"
 	"NAME/model"
-	"strings"
-	"sync"
-
 	"fmt"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var (
-	db   *gorm.DB
-	once sync.Once
-)
-
-// GetDB returns the database instance
-func GetDB() *gorm.DB {
-	once.Do(initPostgres)
-	return db
-}
-
-// SetDB sets the database instance (for testing)
-func SetDB(instance *gorm.DB) {
-	db = instance
-}
-
-func initPostgres() {
+func initPostgres() *gorm.DB {
 	config := conf.GetConfig()
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
 		config.Database.Host,
@@ -62,22 +43,6 @@ func initPostgres() {
 	if err != nil {
 		panic("Failed to migrate database")
 	}
-}
 
-// UpdateSequence updates the sequence of a table
-func UpdateSequence(tableName string) error {
-	if db == nil {
-		return fmt.Errorf("database not initialized")
-	}
-
-	// Get the current maximum ID
-	var maxID uint
-	result := db.Table(tableName).Select("COALESCE(MAX(id), 0)").Scan(&maxID)
-	if result.Error != nil {
-		return result.Error
-	}
-
-	// Update the sequence
-	seqName := strings.ToLower(tableName) + "_id_seq"
-	return db.Exec(fmt.Sprintf("SELECT setval('%s', %d)", seqName, maxID)).Error
+	return db
 }
