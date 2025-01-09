@@ -5,6 +5,7 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -46,7 +47,7 @@ func (s *userService) GetUserByID(id int) (model.User, error) {
 
 func (s *userService) GetUserByName(name string) (model.User, error) {
 	var user model.User
-	if result := s.Db.First(&user, "name = ?", name); result.Error != nil {
+	if result := s.Db.First(&user, "username = ?", name); result.Error != nil {
 		return model.User{}, result.Error
 	}
 	return user, nil

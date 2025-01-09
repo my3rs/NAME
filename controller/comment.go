@@ -96,7 +96,7 @@ func (c *CommentController) Post(req postCommentRequest) model.DetailResponse {
 			c.Ctx.Application().Logger().Error("通过ID获取用户失败：", err.Error())
 		}
 
-		comment.AuthorName = user.Name
+		comment.AuthorName = user.Username
 		comment.Mail = user.Mail
 		comment.URL = user.Url
 
