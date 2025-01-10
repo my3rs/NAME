@@ -42,14 +42,11 @@ func GetJWTService() *JWTService {
 // newJWTService creates a new JWTService instance
 func newJWTService() *JWTService {
 	config := conf.GetConfig().JWT
-	private, public := jwt.MustLoadRSA(conf.GetConfig().JWT.PrivateKey, conf.GetConfig().JWT.PublicKey)
 
 	return &JWTService{
-		signer:        jwt.NewSigner(jwt.RS256, private, config.AccessTokenMaxAge),
-		accessSigner:  jwt.NewSigner(jwt.RS256, private, config.AccessTokenMaxAge),
-		refreshSigner: jwt.NewSigner(jwt.RS256, private, config.RefreshTokenMaxAge),
-		verifier:      jwt.NewVerifier(jwt.RS256, public),
-		config:        &config,
+		signer:   jwt.NewSigner(jwt.HS256, config.Secret, config.AccessTokenMaxAge),
+		verifier: jwt.NewVerifier(jwt.HS256, config.Secret),
+		config:   &config,
 	}
 }
 
@@ -81,8 +78,6 @@ func (s *JWTService) GenerateTokenPair(user model.User) (jwt.TokenPair, error) {
 		return jwt.TokenPair{}, err
 	}
 
-	fmt.Printf("access token: %s\n", tokenPair.AccessToken)
-
 	return tokenPair, nil
 }
 
@@ -90,29 +85,20 @@ func (s *JWTService) VerifyAccessToken(ctx iris.Context) error {
 	accessToken := s.GetTokenFromHeader(ctx, dict.TypeAccessToken)
 
 	if accessToken == "" {
-		return customerror.NewJWTInvalidError("empty access token")
+		return fmt.Errorf("access token is empty")
 	}
 
 	if err := s.checkTokenFormat(accessToken); err != nil {
-		return customerror.NewJWTFormatError("invalid token format")
-	}
-
-	if err := s.checkTokenFormat(accessToken); err != nil {
-		return customerror.NewJWTFormatError("invalid token format")
+		return fmt.Errorf("invalid access token: %w", err)
 	}
 
 	// 去掉Bearer前缀
 	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-	fmt.Println(accessToken)
 
-	token, err := s.verifier.VerifyToken([]byte(accessToken))
+	_, err := s.verifier.VerifyToken([]byte(accessToken))
 	if err != nil {
-		fmt.Println(token)
-		return customerror.NewJWTInvalidError("invalid token: " + string(err.Error()))
-	}
-
-	if conf.GetConfig().Mode == conf.DEV {
-		log.Println("[DEBUG] token verified: ", token)
+		log.Println("invalid access token: %w", err)
+		return fmt.Errorf("invalid access token: %w", err)
 	}
 
 	return nil
@@ -140,16 +126,25 @@ func (s *JWTService) VerifyRefreshToken(ctx iris.Context) (model.Claims, error) 
 }
 
 func (s *JWTService) GetClaimsFromContext(ctx iris.Context) (model.Claims, error) {
-	accessToken := s.GetTokenFromHeader(ctx, dict.TypeAccessToken)
-	token, err := s.verifier.VerifyToken([]byte(accessToken))
-	if err != nil {
-		return model.Claims{}, customerror.NewJWTInvalidError("invalid token")
+	// 从请求头获取 token
+	token := s.GetTokenFromHeader(ctx, dict.TypeAccessToken)
+	if err := s.checkTokenFormat(token); err != nil {
+		return model.Claims{}, customerror.NewJWTInvalidError(err.Error())
 	}
 
-	// Get the custom claims from the token
+	// 去掉 "Bearer " 前缀
+	tokenString := token[7:]
+
+	// 验证 token
+	verifiedToken, err := s.verifier.VerifyToken([]byte(tokenString))
+	if err != nil {
+		return model.Claims{}, customerror.NewJWTInvalidError("invalid token: " + err.Error())
+	}
+
+	// 解析 claims
 	var claims model.Claims
-	if err := token.Claims(&claims); err != nil {
-		return model.Claims{}, customerror.NewJWTInvalidError("invalid token: " + string(err.Error()))
+	if err := verifiedToken.Claims(&claims); err != nil {
+		return model.Claims{}, customerror.NewJWTInvalidError("invalid claims: " + err.Error())
 	}
 
 	return claims, nil

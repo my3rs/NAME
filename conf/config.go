@@ -50,6 +50,7 @@ type DatabaseConfig struct {
 
 // JWTConfig JWT配置
 type JWTConfig struct {
+	Secret             string        `mapstructure:"SECRET_KEY"`
 	PrivateKey         string        `mapstructure:"PRIVATE_KEY"`
 	PublicKey          string        `mapstructure:"PUBLIC_KEY"`
 	AccessTokenMaxAge  time.Duration `mapstructure:"ACCESS_TOKEN_MAX_AGE"`
@@ -132,6 +133,7 @@ func printConfig(c *Config) {
 	fmt.Printf("USER=%s\n", c.Database.User)
 
 	fmt.Println("[JWT]")
+	fmt.Printf("SECRET=%s\n", c.JWT.Secret)
 	fmt.Printf("ACCESS_TOKEN_MAX_AGE=%d\n", c.JWT.AccessTokenMaxAge)
 	fmt.Printf("REFRESH_TOKEN_MAX_AGE=%d\n", c.JWT.RefreshTokenMaxAge)
 	fmt.Printf("PRIVATE_KEY=%s\n", c.JWT.PrivateKey)

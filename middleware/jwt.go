@@ -7,6 +7,7 @@ import (
 
 func JWT(ctx iris.Context) {
 	err := service.GetJWTService().VerifyAccessToken(ctx)
+
 	if err != nil {
 		ctx.Application().Logger().Error(err.Error())
 		ctx.StatusCode(iris.StatusUnauthorized)
