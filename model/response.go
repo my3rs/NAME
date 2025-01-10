@@ -44,7 +44,7 @@ type EmptyResponse struct {
 type DetailResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 // BatchResponse 批量操作响应结构

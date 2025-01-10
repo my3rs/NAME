@@ -4,7 +4,6 @@ import (
 	"NAME/dict"
 	"NAME/model"
 	"NAME/service"
-
 	"github.com/kataras/iris/v12"
 )
 
@@ -83,14 +82,13 @@ func (c *UserController) Get(req model.QueryRequest) model.PageResponse {
 	)
 }
 
-// GetMe 获取当前登录用户信息
+// GetMe 获取当前登录用户信息，由JWT中间件判断是否有权限
 // handle GET /api/v1/users/me
 func (c *UserController) GetMe() model.DetailResponse {
 	// 从 JWT Claims 获取当前用户信息
 	claims, err := service.GetJWTService().GetClaimsFromContext(c.Ctx)
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusUnauthorized)
-		c.Ctx.JSON(iris.Map{"message": err.Error()})
 		return model.DetailResponse{
 			Success: false,
 			Message: err.Error(),

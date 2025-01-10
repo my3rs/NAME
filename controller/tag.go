@@ -8,33 +8,23 @@ import (
 	"strings"
 )
 
-type getTagsRequest struct {
-	Path string `url:"path" json:"path"`
-}
-
-type newTagRequest struct {
-	No   string `json:"no"`
-	Text string `json:"text"`
-}
-
 type TagController struct {
 	Ctx     iris.Context
 	Service service.TagService
 }
 
-func (c *TagController) Get(request getTagsRequest) iris.Map {
+func (c *TagController) Get() {
 	var tags []model.Tag
 
 	tags = c.Service.GetAllTags()
-	c.Ctx.StatusCode(iris.StatusOK)
 
-	return iris.Map{
+	Respond(c.Ctx, iris.StatusOK, iris.Map{
 		"success": true,
 		"items":   tags,
-	}
+	})
 }
 
-func (c *TagController) Post(req newTagRequest) {
+func (c *TagController) Post(req model.Tag) {
 	var tag = model.Tag{
 		No:   req.No,
 		Text: req.Text,
@@ -50,8 +40,7 @@ func (c *TagController) Post(req newTagRequest) {
 		return
 	}
 
-	c.Ctx.StatusCode(iris.StatusOK)
-	c.Ctx.JSON(iris.Map{
+	Respond(c.Ctx, iris.StatusOK, iris.Map{
 		"Success": true,
 		"Message": "新建标签成功！",
 	})
@@ -81,11 +70,11 @@ func (c *TagController) DeleteBy(idsReq string) {
 		}
 		id, err := strconv.Atoi(item)
 		if err != nil {
-			c.Ctx.StatusCode(iris.StatusBadRequest)
-			c.Ctx.JSON(iris.Map{
+			Respond(c.Ctx, iris.StatusBadRequest, iris.Map{
 				"Success": false,
 				"Message": err.Error(),
 			})
+
 			return
 		}
 		ids = append(ids, uint(id))
@@ -93,17 +82,16 @@ func (c *TagController) DeleteBy(idsReq string) {
 
 	err := c.Service.DeleteTags(ids)
 	if err != nil {
-		c.Ctx.StatusCode(400)
-		c.Ctx.JSON(iris.Map{
+		Respond(c.Ctx, iris.StatusBadRequest, iris.Map{
 			"Success": false,
 			"Message": err.Error(),
 		})
+
 		return
 	}
 
-	c.Ctx.StatusCode(iris.StatusOK)
-	c.Ctx.JSON(iris.Map{
+	Respond(c.Ctx, iris.StatusOK, iris.Map{
 		"Success": true,
-		"Message": "删除标签成功！",
+		"Message": "success",
 	})
 }

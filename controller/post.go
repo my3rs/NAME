@@ -5,13 +5,9 @@ import (
 	"NAME/model"
 	"NAME/service"
 	"fmt"
-	"log"
-	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/kataras/iris/v12/mvc"
 
 	"github.com/kataras/iris/v12"
 )
@@ -21,24 +17,6 @@ type PostController struct {
 	Service         service.ContentService
 	TagService      service.TagService
 	CategoryService service.CategoryService
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
-
-func (c *PostController) BeforeActivation(b mvc.BeforeActivation) {
-	log.Print("before ", b.GetRoutes("GET"))
-}
-
-func (c *PostController) AfterActivation(b mvc.BeforeActivation) {
-	log.Print("after ", b.GetRoutes("GET"))
 }
 
 func replaceContentNonEmptyFields(src, dst *model.Content) {
