@@ -23,6 +23,7 @@ const (
 
 type Content struct {
 	ID            uint          `gorm:"primaryKey;comment:内容ID" json:"id"`
+	Slug          string        `json:"slug" gorm:"comment:短标题"`
 	Type          ContentType   `json:"type" gorm:"comment:内容类型：post文章、digu嘀咕、page页面"`
 	Title         string        `json:"title" gorm:"comment:内容标题"`
 	Abstract      string        `json:"abstract" gorm:"comment:内容摘要，如果为空则自动截取正文"`

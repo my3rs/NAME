@@ -45,14 +45,14 @@ func (c *CategoryController) Post(req model.Category) model.EmptyResponse {
 		return model.EmptyResponse{Success: false, Message: "text cannot be empty"}
 	}
 
-	if req.No == "" {
+	if req.Slug == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.EmptyResponse{Success: false, Message: "no cannot be empty"}
 	}
 
 	var category = model.Category{
 		Text: req.Text,
-		No:   req.No,
+		Slug: req.Slug,
 	}
 
 	err := c.CategoryService.InsertCategory(category)
@@ -87,7 +87,7 @@ func (c *CategoryController) PutBy(id int) model.EmptyResponse {
 		return model.EmptyResponse{Success: false, Message: "text cannot be empty"}
 	}
 
-	if req.No == "" {
+	if req.Slug == "" {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
 		return model.EmptyResponse{Success: false, Message: "no cannot be empty"}
 	}
@@ -95,7 +95,7 @@ func (c *CategoryController) PutBy(id int) model.EmptyResponse {
 	var category = model.Category{
 		ID:   req.ID,
 		Text: req.Text,
-		No:   req.No,
+		Slug: req.Slug,
 	}
 
 	err = c.CategoryService.UpdateCategory(category)

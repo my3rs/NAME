@@ -71,11 +71,11 @@ func (c *AttachmentController) Post() {
 	// 插入 `Attachment` 到数据库
 	attachment := model.Attachment{
 		ContentID: uint(contentID),
-		Name:      fileHeader.Filename,
+		Title:     fileHeader.Filename,
 		Path:      "/uploads/" + today + "/",
 		CreatedAt: time.Now().UnixMilli(),
 	}
-	url := attachment.Path + "/" + attachment.Name
+	url := attachment.Path + "/" + attachment.Title
 
 	c.Ctx.Application().Logger().Infof("上传附件 - 插入数据库：%+v", attachment)
 

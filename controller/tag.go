@@ -26,7 +26,7 @@ func (c *TagController) Get() {
 
 func (c *TagController) Post(req model.Tag) {
 	var tag = model.Tag{
-		No:   req.No,
+		Slug: req.Slug,
 		Text: req.Text,
 	}
 
