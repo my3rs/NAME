@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"NAME/controller"
 	"NAME/service"
 	"github.com/kataras/iris/v12"
 )
@@ -10,8 +11,7 @@ func JWT(ctx iris.Context) {
 
 	if err != nil {
 		ctx.Application().Logger().Error(err.Error())
-		ctx.StatusCode(iris.StatusUnauthorized)
-		ctx.JSON(iris.Map{
+		controller.Respond(ctx, iris.StatusUnauthorized, iris.Map{
 			"success": false,
 			"message": err.Error(),
 		})

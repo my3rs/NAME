@@ -84,20 +84,23 @@ func (s *JWTService) GenerateTokenPair(user model.User) (jwt.TokenPair, error) {
 func (s *JWTService) VerifyAccessToken(ctx iris.Context) error {
 	accessToken := s.GetTokenFromHeader(ctx, dict.TypeAccessToken)
 
+	// 检查token是否为空
 	if accessToken == "" {
 		return fmt.Errorf("access token is empty")
 	}
 
-	if err := s.checkTokenFormat(accessToken); err != nil {
-		return fmt.Errorf("invalid access token: %w", err)
+	// 检查token前缀
+	if !strings.HasPrefix(accessToken, "Bearer ") {
+		return errors.New("invalid token format")
 	}
 
-	// 去掉Bearer前缀
+	// Remove Bearer prefix first
 	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
 
 	_, err := s.verifier.VerifyToken([]byte(accessToken))
 	if err != nil {
-		log.Println("invalid access token: %w", err)
+		log.Printf("invalid access token: %v", err)
+		log.Println("token:", accessToken)
 		return fmt.Errorf("invalid access token: %w", err)
 	}
 
@@ -153,7 +156,7 @@ func (s *JWTService) GetClaimsFromContext(ctx iris.Context) (model.Claims, error
 // checkTokenFormat validates the token format
 func (s *JWTService) checkTokenFormat(token string) error {
 	if token == "" {
-		return errors.New("missing token")
+		return errors.New("empty token")
 	}
 	if !strings.HasPrefix(token, "Bearer ") {
 		return errors.New("invalid token format")
