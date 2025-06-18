@@ -33,10 +33,10 @@ func TestContent(t *testing.T) {
 		Text:          "Test Content",
 		TextHTML:      template.HTML("<p>Test Content</p>"),
 		FeaturedImage: "test.jpg",
-		AuthorId:      1,
+		AuthorID:      1,
 		Author: model.User{
 			ID:      1,
-			UserName: "Test User",
+			Username: "Test User",
 		},
 		CategoryID: 1,
 		Category: model.Category{
@@ -51,7 +51,7 @@ func TestContent(t *testing.T) {
 		Tags: []model.Tag{
 			{
 				ID:   1,
-				No:   "test-tag",
+				Slug: "test-tag",
 				Text: "Test Tag",
 			},
 		},
@@ -96,28 +96,21 @@ func TestContentMethods(t *testing.T) {
 		Text:      "This is a test content that should be truncated for the abstract. We need to make sure it works correctly with the GetAbstract method.",
 		CreatedAt: now.UnixMilli(),
 		PublishAt: now.UnixMilli(),
-		Author:    model.User{ID: 1, UserName: "Test User"},
+		Author:    model.User{ID: 1, Username: "Test User"},
 	}
 
 	// Test GetAuthor
 	author := content.GetAuthor()
 	assert.Equal(t, uint(1), author.ID)
-	assert.Equal(t, "Test User", author.UserName)
+	assert.Equal(t, "Test User", author.Username)
 
 	// Test GetAbstract
 	abstract := content.GetAbstract()
 	assert.NotEmpty(t, abstract)
 	assert.LessOrEqual(t, len(abstract), 140)
 
-	// Test GetDate
-	date := content.GetDate()
-	assert.NotEmpty(t, date)
-
-	// Test GetTime
-	timeStr := content.GetTime()
-	assert.NotEmpty(t, timeStr)
-
-	// Test GetDateAndTime
-	dateTime := content.GetDateAndTime()
-	assert.NotEmpty(t, dateTime)
+	// Test with abstract
+	content.Abstract = "Custom abstract"
+	abstract2 := content.GetAbstract()
+	assert.Equal(t, "Custom abstract", abstract2)
 }

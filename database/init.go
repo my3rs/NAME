@@ -2,7 +2,6 @@ package database
 
 import (
 	"NAME/conf"
-	"NAME/model"
 	"sync"
 
 	"gorm.io/gorm"
@@ -23,7 +22,7 @@ func GetDB() *gorm.DB {
 			db = initPostgres()
 		}
 
-		model.LoadSettingsToCache(db)
+		// Settings are now loaded on demand by services
 	})
 
 	return db

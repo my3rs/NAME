@@ -5,7 +5,6 @@ import (
 	"NAME/controller"
 	"NAME/database"
 	"NAME/middleware"
-	"NAME/model"
 	"NAME/service"
 
 	//web "NAME/web/controller"
@@ -125,7 +124,7 @@ func InitRoute(app *iris.Application) {
 
 	// 设置
 	settings := app.Party("/api/v1/settings")
-	if env, found := model.GetSettingsItem("environment"); found && env.Value == model.EnvironmentProd {
+	if conf.GetConfig().Mode == conf.PROD {
 		settings.Use(middleware.JWT)
 	}
 	mvc.Configure(settings, func(app *mvc.Application) {

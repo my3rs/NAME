@@ -13,7 +13,7 @@ func TestCategory(t *testing.T) {
 	category := &model.Category{
 		ID:   1,
 		Text: "Test Category",
-		No:   "test-category",
+		Slug: "test-category",
 	}
 
 	// Test JSON marshaling
@@ -21,7 +21,7 @@ func TestCategory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, string(data), `"id":1`)
 	assert.Contains(t, string(data), `"text":"Test Category"`)
-	assert.Contains(t, string(data), `"no":"test-category"`)
+	assert.Contains(t, string(data), `"slug":"test-category"`)
 
 	// Test JSON unmarshaling
 	var newCategory model.Category
@@ -29,7 +29,7 @@ func TestCategory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, category.ID, newCategory.ID)
 	assert.Equal(t, category.Text, newCategory.Text)
-	assert.Equal(t, category.No, newCategory.No)
+	assert.Equal(t, category.Slug, newCategory.Slug)
 
 	// Test TableName
 	assert.Equal(t, "categories", category.TableName())

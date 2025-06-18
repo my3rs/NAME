@@ -10,10 +10,10 @@ import (
 )
 
 func TestCommentStatus(t *testing.T) {
-	assert.Equal(t, 0, model.CommentStatus_Approved)
-	assert.Equal(t, 1, model.CommentStatus_Unreviewed)
-	assert.Equal(t, 2, model.CommentStatus_Refused)
-	assert.Equal(t, 3, model.CommentStatus_Trash)
+	assert.Equal(t, model.CommentStatus(0), model.CommentStatusApproved)
+	assert.Equal(t, model.CommentStatus(1), model.CommentStatusUnreviewed)
+	assert.Equal(t, model.CommentStatus(2), model.CommentStatusRefused)
+	assert.Equal(t, model.CommentStatus(3), model.CommentStatusTrash)
 }
 
 func TestComment(t *testing.T) {
@@ -28,7 +28,7 @@ func TestComment(t *testing.T) {
 		Mail:       "test@example.com",
 		URL:        "https://example.com",
 		Text:       "Test Comment",
-		Status:     model.CommentStatus_Approved,
+		Status:     model.CommentStatusApproved,
 		IP:         "127.0.0.1",
 		Agent:      "Test Agent",
 		Points:     10,
@@ -59,7 +59,7 @@ func TestComment(t *testing.T) {
 
 	// Test default status
 	defaultComment := &model.Comment{}
-	assert.Equal(t, uint(model.CommentStatus_Approved), defaultComment.Status) // Should default to Approved
+	assert.Equal(t, model.CommentStatusApproved, defaultComment.Status) // Should default to Approved
 }
 
 func TestCommentWithContent(t *testing.T) {

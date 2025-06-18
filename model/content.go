@@ -2,7 +2,6 @@ package model
 
 import (
 	"html/template"
-	"time"
 )
 
 type ContentType string
@@ -31,7 +30,7 @@ type Content struct {
 	TextHTML      template.HTML `json:"textHtml" gorm:"-;comment:内容的HTML格式，运行时生成"`
 	FeaturedImage string        `json:"featuredImage" gorm:"default:null;comment:特色图片URL"`
 
-	AuthorId uint `json:"-" gorm:"comment:作者ID"`
+	AuthorID uint `json:"-" gorm:"comment:作者ID"`
 	Author   User `json:"author" gorm:"comment:作者信息"`
 
 	CategoryID uint     `json:"-" gorm:"comment:分类ID"`
@@ -51,6 +50,10 @@ type Content struct {
 	Comments    []Comment `json:"comments" gorm:"constraint:OnDelete:CASCADE;comment:关联的评论列表"`
 }
 
+func (Content) TableName() string {
+	return "contents"
+}
+
 func (c *Content) GetAuthor() User {
 	return c.Author
 }
@@ -65,19 +68,4 @@ func (c *Content) GetAbstract() string {
 		return c.Text
 	}
 	return c.Text[0:maxLen]
-}
-
-func (c *Content) GetDate() string {
-	date := time.Unix(c.CreatedAt, 0).Format("2006-01-02")
-	return date
-}
-
-func (c *Content) GetTime() string {
-	t := time.Unix(c.CreatedAt, 0).Format("15:04:05")
-	return t
-}
-
-func (c *Content) GetDateAndTime() string {
-	t := time.Unix(c.CreatedAt, 0).Format("2006-01-02 15:04:05")
-	return t
 }

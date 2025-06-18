@@ -71,7 +71,7 @@ func (c *CommentController) Post(req model.Comment) model.DetailResponse {
 		IP:         req.IP,
 		Agent:      req.Agent,
 		ParentID:   req.ParentID,
-		Status:     model.CommentStatus_Approved,
+		Status:     model.CommentStatusApproved,
 	}
 
 	// 如果是已登录用户，直接从数据库中获取用户信息
@@ -83,7 +83,7 @@ func (c *CommentController) Post(req model.Comment) model.DetailResponse {
 
 		comment.AuthorName = user.Username
 		comment.Mail = user.Mail
-		comment.URL = user.Url
+		comment.URL = user.URL
 
 		c.Ctx.Application().Logger().Info("评论--用户ID：", comment.AuthorID, " 用户名：", comment.AuthorName)
 	}

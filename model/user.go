@@ -20,11 +20,15 @@ type User struct {
 	HashedPassword string   `gorm:"column:password" json:"-"`
 	Mail           string   `gorm:"unique" json:"mail"`
 	Avatar         string   `json:"avatar"`
-	Url            string   `json:"url"`
+	URL            string   `json:"url"`
 	CreatedAt      int64    `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt      int64    `json:"updatedAt" gorm:"autoUpdateTime"`
 	Activated      bool     `json:"activated"`
 	Role           UserRole `json:"role"`
+}
+
+func (User) TableName() string {
+	return "users"
 }
 
 // Claims is a custom JWT claims struct.

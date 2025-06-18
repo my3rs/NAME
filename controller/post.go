@@ -28,7 +28,7 @@ func replaceContentNonEmptyFields(src, dst *model.Content) {
 		value := v.Field(i)
 
 		// 不可覆盖的字段
-		if field.Name == "ID" || field.Name == "Type" || field.Name == "AuthorId" ||
+		if field.Name == "ID" || field.Name == "Type" || field.Name == "AuthorID" ||
 			field.Name == "ViewsNum" || field.Name == "Tags" {
 			continue
 		}
@@ -141,7 +141,7 @@ func (c *PostController) PutBy(id int) model.EmptyResponse {
 		Title:        req.Title,
 		Text:         req.Text,
 		Abstract:     req.Abstract,
-		AuthorId:     req.AuthorId,
+		AuthorID:     req.AuthorID,
 		PublishAt:    req.PublishAt,
 		Status:       req.Status,
 		AllowComment: req.AllowComment,
@@ -200,7 +200,7 @@ func (c *PostController) PostInit() model.EmptyResponse {
 			Title:        fmt.Sprintf("Post %d", i),
 			Text:         fmt.Sprintf("This is post %d", i),
 			Abstract:     fmt.Sprintf("Abstract of post %d", i),
-			AuthorId:     1,
+			AuthorID:     1,
 			Status:       model.ContentStatusPublished,
 			AllowComment: true,
 		}
