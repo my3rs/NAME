@@ -35,8 +35,8 @@ func TestContent(t *testing.T) {
 		FeaturedImage: "test.jpg",
 		AuthorId:      1,
 		Author: model.User{
-			ID:   1,
-			Name: "Test User",
+			ID:      1,
+			UserName: "Test User",
 		},
 		CategoryID: 1,
 		Category: model.Category{
@@ -96,13 +96,13 @@ func TestContentMethods(t *testing.T) {
 		Text:      "This is a test content that should be truncated for the abstract. We need to make sure it works correctly with the GetAbstract method.",
 		CreatedAt: now.UnixMilli(),
 		PublishAt: now.UnixMilli(),
-		Author:    model.User{ID: 1, Name: "Test User"},
+		Author:    model.User{ID: 1, UserName: "Test User"},
 	}
 
 	// Test GetAuthor
 	author := content.GetAuthor()
 	assert.Equal(t, uint(1), author.ID)
-	assert.Equal(t, "Test User", author.Name)
+	assert.Equal(t, "Test User", author.UserName)
 
 	// Test GetAbstract
 	abstract := content.GetAbstract()

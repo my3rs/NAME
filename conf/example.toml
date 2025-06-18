@@ -2,19 +2,19 @@ ROOT_URL = "http://localhost"
 PORT = 8000
 MODE = "development"
 STATIC_PATH = "/static"
-DATA_PATH = "/tmp/name_data"
+DATA_PATH = "/Users/hongli/Workspace/NAME/bin/data"
 API_VERSION= "1.0"
 
 [database]
-HOST = "127.0.0.1:5432"
+HOST = "localhost"
+PORT = "5432"
 NAME = "name"
 USER = "postgres"
-PASSWORD = "postgres"
+PASSWORD = "your_new_secure_password_here"
 
 [jwt]
-SECRET_KEY = "replace this"
-ACCESS_TOKEN_MAX_AGE = 1
-REFRESH_TOKEN_MAX_AGE = 2
-PRIVATE_KEY="/home/my3rs/name_data/id_rsa"
-PUBLIC_KEY="/home/my3rs/name_data/id_rsa.pub"
-
+ACCESS_TOKEN_MAX_AGE = 3600
+REFRESH_TOKEN_MAX_AGE = 86400
+SECRET_KEY = "replace me"
+PRIVATE_KEY = "/Users/hongli/.name/rsa_private_key.pem"
+PUBLIC_KEY = "/Users/hongli/.name/rsa_public_key.pem"
