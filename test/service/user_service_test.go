@@ -17,7 +17,7 @@ func TestUserService_InsertUser(t *testing.T) {
 	
 	user := model.User{
 		Username:       "test_insert_" + time.Now().Format("20060102150405"),
-		HashedPassword: "$2a$10$IVxZxP.b7Ey9VPdCkKV4UeHHdZhafQ7x2qFGFMpVCGbfFtCHBZnGK",
+		HashedPassword: "$2a$10$Nmz0WVEsuNT69cljMkb25.ASmyIVHL3vTLy9lZLQOEBRfHYW2I4HC",
 		Mail:          "test_insert_" + time.Now().Format("20060102150405") + "@example.com",
 		Avatar:        "https://example.com/avatar.jpg",
 		URL:           "https://example.com",

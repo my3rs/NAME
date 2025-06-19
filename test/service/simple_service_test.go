@@ -15,7 +15,7 @@ func TestUserService_Simple(t *testing.T) {
 	// 创建一个简单的用户，不依赖其他服务
 	user := model.User{
 		Username:       "simple_test_" + time.Now().Format("150405"),
-		HashedPassword: "$2a$10$IVxZxP.b7Ey9VPdCkKV4UeHHdZhafQ7x2qFGFMpVCGbfFtCHBZnGK",
+		HashedPassword: "$2a$10$Nmz0WVEsuNT69cljMkb25.ASmyIVHL3vTLy9lZLQOEBRfHYW2I4HC",
 		Mail:          "simple_test_" + time.Now().Format("150405") + "@example.com",
 		Avatar:        "https://example.com/avatar.jpg",
 		URL:           "https://example.com",

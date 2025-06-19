@@ -80,13 +80,14 @@ func (s *userService) GetUsersWithOrder(pageIndex int, pageSize int, order strin
 }
 
 func (s *userService) InsertUser(user model.User) error {
-	if result := s.Db.First(&model.User{}, user.ID); !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	// 检查用户名是否已存在
+	var existingUser model.User
+	if result := s.Db.Where("username = ? OR mail = ?", user.Username, user.Mail).First(&existingUser); !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return dict.ErrUserAlreadyExists
 	}
 
-	s.Db.Create(&user)
-
-	return nil
+	result := s.Db.Create(&user)
+	return result.Error
 }
 
 func (s *userService) UpdateUser(user model.User) error {
