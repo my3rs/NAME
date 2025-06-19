@@ -3,6 +3,8 @@ package service
 import (
 	"NAME/model"
 	"NAME/service"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,11 +25,13 @@ func cleanupTestTags(db *gorm.DB) error {
 }
 
 func createTestTag(t *testing.T, tagService service.TagService, text string, no string, path string) model.Tag {
+	timestamp := time.Now().UnixNano()
 	tag := model.Tag{
-		Text: text + " " + time.Now().Format("20060102150405"),
-		Slug: no + "-" + time.Now().Format("20060102150405"),
-		// Path字段不存在于Tag模型中，移除
+		Text: fmt.Sprintf("%s_%d", text, timestamp),
+		Slug: fmt.Sprintf("%s_%d", no, timestamp),
+		UseCount: 0,
 	}
+	time.Sleep(1 * time.Millisecond) // 确保时间戳唯一
 
 	err := tagService.InsertTag(tag)
 	assert.NoError(t, err)
@@ -113,7 +117,7 @@ func TestTagService_GetAllTags(t *testing.T) {
 
 	// 创建多个测试标签
 	for i := 0; i < 3; i++ {
-		createTestTag(t, tagService, "AllTags Test", "alltags-test", "test.alltags")
+		createTestTag(t, tagService, fmt.Sprintf("AllTags Test %d", i), fmt.Sprintf("alltags-test-%d", i), "")
 	}
 
 	// 获取所有标签
@@ -123,7 +127,7 @@ func TestTagService_GetAllTags(t *testing.T) {
 	// 验证我们创建的标签在结果中
 	createdCount := 0
 	for _, tag := range allTags {
-		if len(tag.Text) > 13 && tag.Text[:13] == "AllTags Test " {
+		if strings.Contains(tag.Text, "AllTags Test") {
 			createdCount++
 		}
 	}
@@ -173,7 +177,7 @@ func TestTagService_GetTagsCount(t *testing.T) {
 
 	// 创建测试标签
 	for i := 0; i < 3; i++ {
-		createTestTag(t, tagService, "Count Test", "count-test", "test.count")
+		createTestTag(t, tagService, fmt.Sprintf("Count Test %d", i), fmt.Sprintf("count-test-%d", i), "")
 	}
 
 	// 验证数量增加
@@ -211,7 +215,7 @@ func TestTagService_DeleteTags(t *testing.T) {
 	// 创建多个测试标签
 	var tagIDs []uint
 	for i := 0; i < 3; i++ {
-		tag := createTestTag(t, tagService, "Delete Test", "delete-test", "test.delete")
+		tag := createTestTag(t, tagService, fmt.Sprintf("Delete Test %d", i), fmt.Sprintf("delete-test-%d", i), "")
 		tagIDs = append(tagIDs, tag.ID)
 	}
 
@@ -256,9 +260,9 @@ func TestTagService_SimpleTags(t *testing.T) {
 	_ = createTestTag(t, tagService, "Frontend", "frontend", "")
 
 	// 验证标签基本属性
-	assert.Equal(t, "Technology", techTag.Text)
+	assert.Contains(t, techTag.Text, "Technology")
 	assert.Contains(t, techTag.Slug, "tech")
-	assert.Equal(t, "Programming", progTag.Text)
+	assert.Contains(t, progTag.Text, "Programming")
 	assert.Contains(t, progTag.Slug, "programming")
 
 	// 获取所有标签验证创建成功
@@ -269,7 +273,7 @@ func TestTagService_SimpleTags(t *testing.T) {
 	
 	for _, tag := range allTags {
 		for _, targetText := range tagTexts {
-			if tag.Text == targetText {
+			if strings.Contains(tag.Text, targetText) {
 				createdTags = append(createdTags, tag)
 				break
 			}

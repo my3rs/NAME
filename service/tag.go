@@ -48,7 +48,7 @@ func (s *tagService) GetTagByID(id uint) (model.Tag, error) {
 
 func (s *tagService) GetAllTags() []model.Tag {
 	var tags []model.Tag
-	if result := s.DB.Order("path").Find(&tags); result.Error != nil {
+	if result := s.DB.Order("id").Find(&tags); result.Error != nil {
 		return []model.Tag{}
 	}
 
@@ -74,18 +74,15 @@ func (s *tagService) GetTagsCount() int64 {
 }
 
 func (s *tagService) GetMetadata() iris.Map {
-	var l1cnt, l2cnt, l3cnt, l4cnt int64
-	s.DB.Model(&model.Tag{}).Where("nlevel(path) = 1").Count(&l1cnt)
-	s.DB.Model(&model.Tag{}).Where("nlevel(path) = 2").Count(&l2cnt)
-	s.DB.Model(&model.Tag{}).Where("nlevel(path) = 3").Count(&l3cnt)
-	s.DB.Model(&model.Tag{}).Where("nlevel(path) = 4").Count(&l4cnt)
+	var totalCount int64
+	s.DB.Model(&model.Tag{}).Count(&totalCount)
 
 	return iris.Map{
-		"sum":         l1cnt + l2cnt + l3cnt + l4cnt,
-		"level1Count": l1cnt,
-		"level2Count": l2cnt,
-		"level3Count": l3cnt,
-		"level4Count": l4cnt,
+		"sum":         totalCount,
+		"level1Count": 0,
+		"level2Count": 0,
+		"level3Count": 0,
+		"level4Count": 0,
 	}
 }
 
