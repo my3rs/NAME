@@ -156,7 +156,7 @@ func TestCategoryService_UpdateCategory(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 验证更新是否成功
-	updatedCategories := categoryService.GetCategories(1, 10, "id desc")
+	updatedCategories := categoryService.GetCategories(0, 10, "id desc")
 	var updatedCategory *model.Category
 	for _, cat := range updatedCategories {
 		if cat.ID == insertedCategory.ID {
@@ -208,7 +208,7 @@ func TestCategoryService_DeleteCategories(t *testing.T) {
 	assert.Equal(t, beforeCount-3, afterCount)
 
 	// 验证分类确实被删除
-	remainingCategories := categoryService.GetCategories(1, 10, "id desc")
+	remainingCategories := categoryService.GetCategories(0, 10, "id desc")
 	for _, cat := range remainingCategories {
 		for _, deletedID := range categoryIDs {
 			assert.NotEqual(t, deletedID, cat.ID)

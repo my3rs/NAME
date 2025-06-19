@@ -99,6 +99,11 @@ func (s *tagService) InsertTag(tag model.Tag) error {
 }
 
 func (s *tagService) DeleteTags(ids []uint) error {
+	// 如果没有ID要删除，直接返回成功
+	if len(ids) == 0 {
+		return nil
+	}
+	
 	result := s.DB.Delete(&model.Tag{}, ids)
 	if result.Error != nil {
 		return result.Error

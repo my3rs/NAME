@@ -153,6 +153,11 @@ func (s *commentService) DeleteComment(id uint) error {
 }
 
 func (s *commentService) DeleteBatchComment(ids []uint) (int64, error) {
+	// 如果没有ID要删除，直接返回成功
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	
 	result := s.DB.Delete(&model.Comment{}, ids)
 	if result.Error != nil {
 		return 0, result.Error
