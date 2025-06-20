@@ -13,18 +13,19 @@ type TagController struct {
 	Service service.TagService
 }
 
-func (c *TagController) Get() {
-	var tags []model.Tag
+func (c *TagController) Get() model.ListResponse {
+	tags := c.Service.GetAllTags()
+	
+	// 转换为interface{}切片
+	data := make([]interface{}, len(tags))
+	for i, tag := range tags {
+		data[i] = tag
+	}
 
-	tags = c.Service.GetAllTags()
-
-	Respond(c.Ctx, iris.StatusOK, iris.Map{
-		"success": true,
-		"items":   tags,
-	})
+	return model.NewListResponse(true, "success", data, int64(len(tags)))
 }
 
-func (c *TagController) Post(req model.Tag) {
+func (c *TagController) Post(req model.Tag) model.EmptyResponse {
 	var tag = model.Tag{
 		Slug: req.Slug,
 		Text: req.Text,
@@ -32,29 +33,27 @@ func (c *TagController) Post(req model.Tag) {
 
 	err := c.Service.InsertTag(tag)
 	if err != nil {
-		c.Ctx.StatusCode(400)
-		c.Ctx.JSON(iris.Map{
-			"Success": false,
-			"Message": err.Error(),
-		})
-		return
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.EmptyResponse{
+			Success: false,
+			Message: err.Error(),
+		}
 	}
 
-	Respond(c.Ctx, iris.StatusOK, iris.Map{
-		"Success": true,
-		"Message": "新建标签成功！",
-	})
+	return model.EmptyResponse{
+		Success: true,
+		Message: "新建标签成功！",
+	}
 }
 
 // DeleteBy handles DELETE /api/v1/tag/1,2,3 批量删除标签
-func (c *TagController) DeleteBy(idsReq string) {
+func (c *TagController) DeleteBy(idsReq string) model.EmptyResponse {
 	if len(idsReq) == 0 {
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-		c.Ctx.JSON(iris.Map{
-			"Success": false,
-			"Message": "参数错误",
-		})
-		return
+		return model.EmptyResponse{
+			Success: false,
+			Message: "参数错误",
+		}
 	}
 
 	// 去掉末尾的逗号
@@ -70,28 +69,26 @@ func (c *TagController) DeleteBy(idsReq string) {
 		}
 		id, err := strconv.Atoi(item)
 		if err != nil {
-			Respond(c.Ctx, iris.StatusBadRequest, iris.Map{
-				"Success": false,
-				"Message": err.Error(),
-			})
-
-			return
+			c.Ctx.StatusCode(iris.StatusBadRequest)
+			return model.EmptyResponse{
+				Success: false,
+				Message: err.Error(),
+			}
 		}
 		ids = append(ids, uint(id))
 	}
 
 	err := c.Service.DeleteTags(ids)
 	if err != nil {
-		Respond(c.Ctx, iris.StatusBadRequest, iris.Map{
-			"Success": false,
-			"Message": err.Error(),
-		})
-
-		return
+		c.Ctx.StatusCode(iris.StatusBadRequest)
+		return model.EmptyResponse{
+			Success: false,
+			Message: err.Error(),
+		}
 	}
 
-	Respond(c.Ctx, iris.StatusOK, iris.Map{
-		"Success": true,
-		"Message": "success",
-	})
+	return model.EmptyResponse{
+		Success: true,
+		Message: "删除成功",
+	}
 }

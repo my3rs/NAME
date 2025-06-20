@@ -18,7 +18,7 @@ type AttachmentController struct {
 	AttachmentService service.AttachmentService
 }
 
-func (c *AttachmentController) Post() {
+func (c *AttachmentController) Post() model.UploadResponse {
 	c.Ctx.SetMaxRequestBodySize(conf.GetConfig().MaxBodySize)
 
 	// 从请求中读取文件
@@ -26,14 +26,8 @@ func (c *AttachmentController) Post() {
 
 	if err != nil {
 		c.Ctx.Application().Logger().Error("上传附件 - 读取文件失败: ", err, " - Content Type：", c.Ctx.GetHeader("Content-Type"))
-
-		c.Ctx.JSON(iris.Map{
-			"Success": false,
-			"Message": err.Error(),
-		})
 		c.Ctx.StatusCode(iris.StatusBadRequest)
-
-		return
+		return model.NewUploadResponse(false, err.Error(), "")
 	}
 
 	// 以时间戳为文件名
@@ -53,19 +47,19 @@ func (c *AttachmentController) Post() {
 
 	// 保存文件
 	today := time.Now().Format("2006-01")
-	dest := conf.GetConfig().DataPath + "/uploads/" + today
+	dest := conf.GetConfig().DataPath + "/uploads/" + today + "/"
 
-	os.Mkdir(dest, 0700)
+	if err := os.MkdirAll(dest, 0700); err != nil {
+		c.Ctx.Application().Logger().Error("上传附件 - 创建目录失败: ", err)
+		c.Ctx.StatusCode(iris.StatusInternalServerError)
+		return model.NewUploadResponse(false, "创建目录失败: "+err.Error(), "")
+	}
+	
 	_, err = c.Ctx.SaveFormFile(fileHeader, dest+fileHeader.Filename)
 	if err != nil {
 		c.Ctx.Application().Logger().Error("上传附件 - 保存文件失败: ", err)
-
-		c.Ctx.JSON(iris.Map{
-			"Success": false,
-			"Message": err.Error(),
-		})
 		c.Ctx.StatusCode(iris.StatusInternalServerError)
-		return
+		return model.NewUploadResponse(false, err.Error(), "")
 	}
 
 	// 插入 `Attachment` 到数据库
@@ -75,7 +69,7 @@ func (c *AttachmentController) Post() {
 		Path:      "/uploads/" + today + "/",
 		CreatedAt: time.Now().UnixMilli(),
 	}
-	url := attachment.Path + "/" + attachment.Title
+	url := attachment.Path + attachment.Title
 
 	c.Ctx.Application().Logger().Infof("上传附件 - 插入数据库：%+v", attachment)
 
@@ -84,21 +78,11 @@ func (c *AttachmentController) Post() {
 	}
 
 	if e := c.AttachmentService.InsertAttachment(attachment); e != nil {
-		c.Ctx.JSON(iris.Map{
-			"Success": false,
-			"Message": e.Error(),
-			"URL":     url,
-		})
 		c.Ctx.StatusCode(iris.StatusInternalServerError)
-
-		return
+		return model.NewUploadResponse(false, e.Error(), url)
 	}
 
-	c.Ctx.JSON(iris.Map{
-		"Success": true,
-		"Message": "",
-		"URL":     url,
-	})
+	return model.NewUploadResponse(true, "上传成功", url)
 }
 
 //

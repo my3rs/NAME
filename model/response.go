@@ -62,6 +62,13 @@ type StatusResponse struct {
 	Status  string `json:"status"`
 }
 
+// UploadResponse 上传响应结构
+type UploadResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	URL     string `json:"url,omitempty"`
+}
+
 // NewResponse 创建基础响应
 func NewResponse(success bool, message string) BaseResponse {
 	return BaseResponse{
@@ -113,5 +120,14 @@ func NewDetailResponse(success bool, message string, data interface{}) DetailRes
 		Success: success,
 		Message: message,
 		Data:    data,
+	}
+}
+
+// NewUploadResponse 创建上传响应
+func NewUploadResponse(success bool, message string, url string) UploadResponse {
+	return UploadResponse{
+		Success: success,
+		Message: message,
+		URL:     url,
 	}
 }

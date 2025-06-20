@@ -73,37 +73,29 @@ func (c *AuthController) PostLoginBy(username string) model.BaseResponse {
 }
 
 // PostRefresh handles POST: /auth/refresh
-func (c *AuthController) PostRefresh() {
+func (c *AuthController) PostRefresh() model.BaseResponse {
 	claims, err := service.GetJWTService().VerifyRefreshToken(c.Ctx)
 	if err != nil {
-		c.Ctx.StopWithJSON(401, iris.Map{
-			"message": "Invalid refresh token" + err.Error(),
-		})
-		return
+		c.Ctx.StatusCode(iris.StatusUnauthorized)
+		return model.NewResponse(false, "Invalid refresh token: "+err.Error())
 	}
 
 	user, err := c.UserService.GetUserByName(claims.Subject)
 	if err != nil {
-		c.Ctx.StopWithJSON(401, iris.Map{
-			"message": "User not found",
-			"success": false,
-		})
-		return
+		c.Ctx.StatusCode(iris.StatusUnauthorized)
+		return model.NewResponse(false, "User not found")
 	}
 
 	tokenPair, err := service.GetJWTService().GenerateTokenPair(user)
 	if err != nil {
-		c.Ctx.StopWithJSON(500, iris.Map{
-			"message": "Failed to generate token pair",
-		})
-		return
+		c.Ctx.StatusCode(iris.StatusInternalServerError)
+		return model.NewResponse(false, "Failed to generate token pair")
 	}
 
 	c.Ctx.Header("Authorization", "Bearer "+string(tokenPair.AccessToken))
 	c.Ctx.Header("X-Refresh-Token", string(tokenPair.RefreshToken))
-	c.Ctx.JSON(iris.Map{
-		"message": "Token refreshed successfully",
-	})
+	
+	return model.NewResponse(true, "Token refreshed successfully")
 }
 
 // HashAndSalt : Generate hashed password

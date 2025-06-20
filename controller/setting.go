@@ -10,23 +10,21 @@ type SettingController struct {
 	Ctx iris.Context
 }
 
-func (c *SettingController) GetBy(no string) {
+func (c *SettingController) GetBy(no string) model.DetailResponse {
 	var setting model.Setting
 	err := database.GetDB().Where("key = ?", no).First(&setting).Error
 	if err != nil {
 		c.Ctx.StatusCode(iris.StatusNotFound)
-		c.Ctx.JSON(iris.Map{
-			"success": false,
-			"message": "没有找到对应的配置项",
-		})
-		return
+		return model.DetailResponse{
+			Success: false,
+			Message: "没有找到对应的配置项",
+		}
 	}
 
 	c.Ctx.StatusCode(iris.StatusOK)
-	c.Ctx.JSON(iris.Map{
-		"success": true,
-		"data":    setting,
-	})
-
-	return
+	return model.DetailResponse{
+		Success: true,
+		Message: "success",
+		Data:    setting,
+	}
 }
