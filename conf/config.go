@@ -26,12 +26,12 @@ var (
 
 // Config 配置结构
 type Config struct {
-	RootURL     string         `mapstructure:"ROOT_URL"`
+	Host        string         `mapstructure:"HOST"`
 	Port        int            `mapstructure:"PORT"`
 	Mode        string         `mapstructure:"MODE"`
-	StaticPath  string         `mapstructure:"STATIC_PATH"`
+	AssetsPath  string         `mapstructure:"ASSETS_PATH"`
 	DataPath    string         `mapstructure:"DATA_PATH"`
-	ApiVersion  string         `mapstructure:"API_VERSION"`
+	UploadsPath string         `mapstructure:"UPLOADS_PATH"`
 	MaxBodySize int64          `mapstructure:"MAX_BODY_SIZE"`
 	Database    DatabaseConfig `mapstructure:"database"`
 	JWT         JWTConfig      `mapstructure:"jwt"`
@@ -41,18 +41,20 @@ type Config struct {
 type DatabaseConfig struct {
 	Driver   string `mapstructure:"DRIVER"`
 	DataPath string `mapstructure:"DATA_PATH"`
+	FileName string `mapstructure:"FILE_NAME"`
 	Host     string `mapstructure:"HOST"`
 	Port     string `mapstructure:"PORT"`
 	Name     string `mapstructure:"NAME"`
 	User     string `mapstructure:"USER"`
 	Password string `mapstructure:"PASSWORD"`
+	SSLMode  string `mapstructure:"SSL_MODE"`
+	TimeZone string `mapstructure:"TIME_ZONE"`
 }
 
 // JWTConfig JWT配置
 type JWTConfig struct {
 	Secret             string        `mapstructure:"SECRET_KEY"`
-	PrivateKey         string        `mapstructure:"PRIVATE_KEY"`
-	PublicKey          string        `mapstructure:"PUBLIC_KEY"`
+	Issuer             string        `mapstructure:"ISSUER"`
 	AccessTokenMaxAge  time.Duration `mapstructure:"ACCESS_TOKEN_MAX_AGE"`
 	RefreshTokenMaxAge time.Duration `mapstructure:"REFRESH_TOKEN_MAX_AGE"`
 }
@@ -61,25 +63,27 @@ func init() {
 	log.Println("初始化配置...")
 
 	// 设置默认值
-	viper.SetDefault("ROOT_URL", "http://localhost")
+	viper.SetDefault("HOST", "127.0.0.1")
 	viper.SetDefault("PORT", 8000)
 	viper.SetDefault("MODE", DEV)
-	viper.SetDefault("STATIC_PATH", "/static")
+	viper.SetDefault("ASSETS_PATH", "./web/assets")
 	viper.SetDefault("DATA_PATH", filepath.Join("bin", "data"))
-	viper.SetDefault("API_VERSION", "1.0")
+	viper.SetDefault("UPLOADS_PATH", "/uploads")
 	viper.SetDefault("MAX_BODY_SIZE", 10*1024*1024)
 
 	viper.SetDefault("database.DRIVER", DATABASE_DRIVER_SQLITE)
 	viper.SetDefault("database.DATA_PATH", ".")
+	viper.SetDefault("database.FILE_NAME", "name.db")
 	viper.SetDefault("database.HOST", "localhost")
 	viper.SetDefault("database.PORT", "5432")
 	viper.SetDefault("database.NAME", "name")
 	viper.SetDefault("database.USER", "postgres")
+	viper.SetDefault("database.SSL_MODE", "disable")
+	viper.SetDefault("database.TIME_ZONE", "Asia/Shanghai")
 
 	viper.SetDefault("jwt.ACCESS_TOKEN_MAX_AGE", 60*time.Minute)
 	viper.SetDefault("jwt.REFRESH_TOKEN_MAX_AGE", 7*24*60*time.Minute)
-	viper.SetDefault("jwt.PRIVATE_KEY", filepath.Join("bin", "config", "rsa_private_key.pem"))
-	viper.SetDefault("jwt.PUBLIC_KEY", filepath.Join("bin", "config", "rsa_public_key.pem"))
+	viper.SetDefault("jwt.ISSUER", "NAME")
 
 	// 设置配置文件
 	viper.SetConfigName("name")
@@ -120,24 +124,28 @@ func GetConfig() *Config {
 // printConfig 打印配置信息
 func printConfig(c *Config) {
 	fmt.Println("===================当前配置================")
-	fmt.Printf("ROOT_URL=%s\n", c.RootURL)
+	fmt.Printf("HOST=%s\n", c.Host)
 	fmt.Printf("PORT=%d\n", c.Port)
 	fmt.Printf("MODE=%s\n", c.Mode)
-	fmt.Printf("STATIC_PATH=%s\n", c.StaticPath)
+	fmt.Printf("ASSETS_PATH=%s\n", c.AssetsPath)
 	fmt.Printf("DATA_PATH=%s\n", c.DataPath)
-	fmt.Printf("API_VERSION=%s\n", c.ApiVersion)
+	fmt.Printf("UPLOADS_PATH=%s\n", c.UploadsPath)
 
 	fmt.Println("[DATABASE]")
+	fmt.Printf("DRIVER=%s\n", c.Database.Driver)
+	fmt.Printf("DATA_PATH=%s\n", c.Database.DataPath)
+	fmt.Printf("FILE_NAME=%s\n", c.Database.FileName)
 	fmt.Printf("HOST=%s\n", c.Database.Host)
 	fmt.Printf("NAME=%s\n", c.Database.Name)
 	fmt.Printf("USER=%s\n", c.Database.User)
+	fmt.Printf("SSL_MODE=%s\n", c.Database.SSLMode)
+	fmt.Printf("TIME_ZONE=%s\n", c.Database.TimeZone)
 
 	fmt.Println("[JWT]")
 	fmt.Printf("SECRET=%s\n", c.JWT.Secret)
+	fmt.Printf("ISSUER=%s\n", c.JWT.Issuer)
 	fmt.Printf("ACCESS_TOKEN_MAX_AGE=%d\n", c.JWT.AccessTokenMaxAge)
 	fmt.Printf("REFRESH_TOKEN_MAX_AGE=%d\n", c.JWT.RefreshTokenMaxAge)
-	fmt.Printf("PRIVATE_KEY=%s\n", c.JWT.PrivateKey)
-	fmt.Printf("PUBLIC_KEY=%s\n", c.JWT.PublicKey)
 
 	fmt.Println("==========================================")
 }

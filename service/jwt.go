@@ -57,7 +57,7 @@ func (s *JWTService) GenerateTokenPair(user model.User) (jwt.TokenPair, error) {
 	// Create refresh claims with user ID as subject
 	refreshClaims := jwt.Claims{
 		Subject:  fmt.Sprintf("%s", user.Username),
-		Issuer:   "NAME",
+		Issuer:   s.config.Issuer,
 		IssuedAt: now.Unix(),
 		Expiry:   now.Add(time.Second * s.config.RefreshTokenMaxAge).Unix(),
 	}
@@ -66,7 +66,7 @@ func (s *JWTService) GenerateTokenPair(user model.User) (jwt.TokenPair, error) {
 	accessClaims := model.Claims{
 		Claims: jwt.Claims{
 			Subject:  fmt.Sprintf("%s", user.Username),
-			Issuer:   "NAME",
+			Issuer:   s.config.Issuer,
 			IssuedAt: now.Unix(),
 			Expiry:   now.Add(time.Second * s.config.AccessTokenMaxAge).Unix(),
 		},

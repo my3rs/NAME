@@ -66,7 +66,7 @@ func (c *AttachmentController) Post() model.UploadResponse {
 	attachment := model.Attachment{
 		ContentID: uint(contentID),
 		Title:     fileHeader.Filename,
-		Path:      "/uploads/" + today + "/",
+		Path:      conf.GetConfig().UploadsPath + "/" + today + "/",
 		CreatedAt: time.Now().UnixMilli(),
 	}
 	url := attachment.Path + attachment.Title

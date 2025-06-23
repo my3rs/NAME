@@ -11,8 +11,9 @@ import (
 
 func initSQLite() *gorm.DB {
 	config := conf.GetConfig()
-	log.Println("Connecting to sqlite database in " + config.Database.DataPath + "/name.db")
-	db, err := gorm.Open(sqlite.Open(config.Database.DataPath+"/name.db"), &gorm.Config{})
+	dbPath := config.Database.DataPath + "/" + config.Database.FileName
+	log.Println("Connecting to sqlite database in " + dbPath)
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
